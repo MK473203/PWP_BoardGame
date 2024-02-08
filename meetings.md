@@ -5,7 +5,6 @@
 * **ASSISTANTS: Mika Oja**
 
 ### Minutes
-*Summary of what was discussed during the meeting*
 
 We went through the different sections in the "*RESTful API description*"-wiki page, with Mika making short comments about each one. After reviewing the basic project idea, he recommended focusing on one board game initially to meet project requirements on time. He was doubtful about the safety of sending game rules through the API. However, we were planning from the beginning to make move validation and game rules purely server-side.
 
