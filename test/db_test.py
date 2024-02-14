@@ -13,7 +13,8 @@ def app():
         "SQLALCHEMY_DATABASE_URI": "sqlite:///" + db_fname,
         "TESTING": True
     }
-    
+    # Pitää luoda vastaavanlainen create_app funktio
+    # Ei vielä toiminnassa
     app = create_app(config)
     
     with app.app_context():
