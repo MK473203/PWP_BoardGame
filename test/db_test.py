@@ -1,7 +1,28 @@
+import os
+import pytest
+import tempfile
 from app import app
 from gameTypes import gameType, defaultStates
 from models import User, Game
-from flask.testing import FlaskClient
+
+
+@pytest.fixture
+def app():
+    db_fd, db_fname = tempfile.mkstemp()
+    config = {
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///" + db_fname,
+        "TESTING": True
+    }
+    
+    app = create_app(config)
+    
+    with app.app_context():
+        db.create_all()
+        
+    yield app
+    
+    os.close(db_fd)
+    os.unlink(db_fname)
 
 def create_test_user():
     return User(
