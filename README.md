@@ -4,7 +4,7 @@
 * Markus Komulainen markkomu@student.oulu.fi
 * Antti Korpi akorpi20@student.oulu.fi
 * Mikael Marin mmarin20@student.oulu.fi
-* Waltteri Rasila krasilia@student.oulu.fi
+* Waltteri Rasila krasila@student.oulu.fi
 
 ## Technical information
 
