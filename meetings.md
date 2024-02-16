@@ -12,24 +12,26 @@ Additionally, Mika identified several sections as missing or insufficient, which
 
 
 ### Action points
-
 - Add motivation for our project idea
-
 - Diagram should visualize our project's concepts and their relations, not the system's architecture or endpoints
-
 - Lichess API Client example should be more detailed
 
 
 
 ## Meeting 2.
-* **DATE:**
-* **ASSISTANTS:**
+* **DATE: 16.2.2024**
+* **ASSISTANTS: Mika Oja**
 
 ### Minutes
-*Summary of what was discussed during the meeting*
+
+We briefly went through the database design and implementation. Mika noted that our database structure was quite simple and wondered whether we will be able to implement the required amount of resources. 
+
+Additionally, Mika identified several issues in the database design and implementation, which are outlined below as action points.
 
 ### Action points
-*List here the actions points discussed with assistants*
+- gameHistory and history should be replaced with a many-to-many relationship between users and games.
+- gameTypes should be moved to a table in the database.
+- Database population should be done with CLI commands (See Flask API Project Layout in Lovelace)
 
 
 
