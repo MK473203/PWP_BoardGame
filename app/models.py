@@ -6,9 +6,9 @@ from app import db
 
 GamePlayers = db.Table("GamePlayers",
                        db.Column("gameId", db.Integer, db.ForeignKey(
-                           "Game.id"), primary_key=True),
+                           "Game.id", ondelete="SET NULL"), primary_key=True),
                        db.Column("playerId", db.Integer, db.ForeignKey(
-                           "User.id"), primary_key=True),
+                           "User.id", ondelete="SET NULL"), primary_key=True),
                        db.Column("team", db.Integer)
                        )
 
@@ -44,6 +44,7 @@ class Game(db.Model):
     state = db.Column(db.Text)
     currentPlayer = db.Column(db.Integer, db.ForeignKey(
         "User.id", ondelete="SET NULL"), default=None, nullable=True)
+    moveHistory = db.Column(db.Blob, default=None, nullable=True)
 
     players = db.relationship(
         "User", secondary=GamePlayers, back_populates="games")
