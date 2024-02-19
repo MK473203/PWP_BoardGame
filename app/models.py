@@ -44,7 +44,7 @@ class Game(db.Model):
     state = db.Column(db.Text)
     currentPlayer = db.Column(db.Integer, db.ForeignKey(
         "User.id", ondelete="SET NULL"), default=None, nullable=True)
-    moveHistory = db.Column(db.Blob, default=None, nullable=True)
+    moveHistory = db.Column(db.BLOB, default=None, nullable=True)
 
     players = db.relationship(
         "User", secondary=GamePlayers, back_populates="games")
