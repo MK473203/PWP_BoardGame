@@ -23,4 +23,4 @@ Database uses SQLite, version 3.40.1\
 ```pip install -r requirements.txt```
 
 **Setup an example database:**\
-```python models.py```
+```flask populate-db```
