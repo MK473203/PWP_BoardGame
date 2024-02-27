@@ -30,6 +30,21 @@ def create_test_user():
         password="test123"
     )
 
+def test_unique_username(app):
+    # Luo User
+    user1 = User(name="test_user", password="password123")
+    db.session.add(user1)
+    db.session.commit()
+
+    # Luo User samalla nimellä
+    user2 = User(name="test_user", password="password456")
+    db.session.add(user2)
+
+    # Errorhandling
+    with pytest.raises(Exception) as excinfo:
+        db.session.commit()
+    
+    assert "IntegrityError" in str(excinfo.value)
 
 def create_test_game():
     return 0
@@ -43,8 +58,8 @@ def test_create_user(app):
     # Testi, että Userin luonti ja tallennus databaseen onnistuu, sekä databasesta Userin löytäminen onnistuu
     with app.app_context():
 
-        User = create_test_user()
-        db.session.add(User)
+        user = create_test_user()
+        db.session.add(user)
         db.session.commit()
 
         assert User.query.count() == 1
