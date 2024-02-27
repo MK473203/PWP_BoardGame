@@ -1,6 +1,6 @@
 from flask import request, Response, url_for
 from flask_restful import Resource
-from werkzeug.exceptions import BadRequest, UnsupportedMediaType
+from werkzeug.exceptions import BadRequest, UnsupportedMediaType, Forbidden
 from jsonschema import validate, ValidationError, draft7_format_checker
 from app.utils import require_admin, require_login, key_hash
 from app.models import User
@@ -59,9 +59,22 @@ class UserCollection(Resource):
 class UserItem(Resource):
 
     @require_login
-    def get(self, user_id):
+    def get(self, user_id, **kwargs):
         """Get an user's information. Requires user authentication"""
-        pass
+        
+        if kwargs["login_user_id"] != user_id:
+            raise Forbidden
+
+        user = User.query.get(user_id)
+
+        user_dict = {
+            "id": user.id,
+            "name": user.name,
+            "turnsPlayed": user.turnsPlayed,
+            "totalTime": user.totalTime
+        }
+
+        return user_dict, 200
 
     @require_login
     def put(self, user_id):

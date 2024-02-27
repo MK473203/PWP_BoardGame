@@ -1,8 +1,11 @@
 import click
+import hashlib
 from flask.cli import with_appcontext
 
 from app import db
 
+def key_hash(key):
+    return hashlib.sha256(key.encode()).digest()
 
 GamePlayers = db.Table("GamePlayers",
                        db.Column("gameId", db.Integer, db.ForeignKey(
@@ -84,9 +87,9 @@ def populate_db_command():
 
     game_type_1 = GameType(name="Tictactoe", defaultState="---------")
 
-    user1 = User(name="user1", password="123456789")
-    user2 = User(name="user2", password="salasana")
-    user3 = User(name="user3", password="aaa")
+    user1 = User(name="user1", password=key_hash("123456789"))
+    user2 = User(name="user2", password=key_hash("salasana"))
+    user3 = User(name="user3", password=key_hash("aaa"))
 
     game1 = Game(type=game_type_1.id, state=game_type_1.defaultState,
                  currentPlayer=user1.id)
