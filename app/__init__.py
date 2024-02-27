@@ -34,6 +34,7 @@ def create_app(test_config=None):
     from . import models
     from . import api
 
+    app.register_blueprint(api.api_bp)
     app.cli.add_command(models.init_db_command)
     app.cli.add_command(models.populate_db_command)
     app.cli.add_command(models.reset_db_command)

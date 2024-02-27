@@ -14,7 +14,9 @@ GamePlayers = db.Table("GamePlayers",
 
 
 class GameType(db.Model):
+    """SQLAlchemy model class for game types"""
     __tablename__ = "GameType"
+
     id = db.Column(db.Integer, primary_key=True,
                    unique=True, autoincrement=True)
     name = db.Column(db.String(64))
@@ -22,20 +24,39 @@ class GameType(db.Model):
 
 
 class User(db.Model):
+    """SQLAlchemy model class for users"""
     __tablename__ = "User"
+
     id = db.Column(db.Integer, primary_key=True,
                    unique=True, autoincrement=True)
-    name = db.Column(db.String(64))
-    password = db.Column(db.String(64))  # Not encrypted
+    name = db.Column(db.String(64), unique=True)
+    password = db.Column(db.String(64))
     turnsPlayed = db.Column(db.Integer, default=0)
     totalTime = db.Column(db.Integer, default=0)
 
     games = db.relationship(
         "Game", secondary=GamePlayers, back_populates="players")
 
+    @staticmethod
+    def json_schema():
+        schema = {
+            "type": "object",
+            "required": ["name", "password"]
+        }
+        props = schema["properties"] = {}
+        props["name"] = {
+            "type": "string"
+        }
+        props["password"] = {
+            "type": "string"
+        }
+        return schema
+
 
 class Game(db.Model):
+    """SQLAlchemy model class for game instances"""
     __tablename__ = "Game"
+
     id = db.Column(db.Integer, primary_key=True,
                    unique=True, autoincrement=True)
     type = db.Column(db.Integer, db.ForeignKey(
@@ -61,16 +82,16 @@ def init_db_command():
 def populate_db_command():
     db.create_all()
 
-    gameType1 = GameType(name="Tictactoe", defaultState="---------")
+    game_type_1 = GameType(name="Tictactoe", defaultState="---------")
 
     user1 = User(name="user1", password="123456789")
     user2 = User(name="user2", password="salasana")
     user3 = User(name="user3", password="aaa")
 
-    game1 = Game(type=gameType1.id, state=gameType1.defaultState,
+    game1 = Game(type=game_type_1.id, state=game_type_1.defaultState,
                  currentPlayer=user1.id)
 
-    db.session.add(gameType1)
+    db.session.add(game_type_1)
     db.session.add_all([user1, user2, user3])
     db.session.add(game1)
 
