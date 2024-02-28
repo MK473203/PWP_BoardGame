@@ -4,8 +4,10 @@ from flask.cli import with_appcontext
 
 from app import db
 
+
 def key_hash(key):
     return hashlib.sha256(key.encode()).digest()
+
 
 GamePlayers = db.Table("GamePlayers",
                        db.Column("gameId", db.Integer, db.ForeignKey(
@@ -25,6 +27,25 @@ class GameType(db.Model):
     name = db.Column(db.String(64))
     defaultState = db.Column(db.String(64))
 
+    @staticmethod
+    def json_schema():
+        """JSON schema for creating a game type"""
+        schema = {
+            "type": "object",
+            "required": ["name", "defaultState"]
+        }
+        props = schema["properties"] = {}
+        props["name"] = {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+        }
+        props["defaultState"] = {
+            "type": "string",
+            "maxLength": 64
+        }
+        return schema
+
 
 class User(db.Model):
     """SQLAlchemy model class for users"""
@@ -42,18 +63,36 @@ class User(db.Model):
 
     @staticmethod
     def json_schema():
+        """JSON schema for creating an user"""
         schema = {
             "type": "object",
             "required": ["name", "password"]
         }
         props = schema["properties"] = {}
         props["name"] = {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
         }
         props["password"] = {
             "type": "string"
         }
         return schema
+
+    @staticmethod
+    def validate_password(password):
+        """
+        Check that a given password fulfills the following requirements:
+            - 3-64 characters
+            - At least one number
+        """
+        if not 3 <= len(password) <= 64:
+            return "Password must have 3-64 characters.", 400
+
+        if not any(char.isdigit() for char in password):
+            return "Password must include at least one number.", 400
+
+        return None
 
 
 class Game(db.Model):

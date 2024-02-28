@@ -1,10 +1,11 @@
-from flask import request, Response, url_for
+from flask import Response, request, url_for
 from flask_restful import Resource
-from werkzeug.exceptions import BadRequest, UnsupportedMediaType, Forbidden
-from jsonschema import validate, ValidationError, draft7_format_checker
-from app.utils import require_admin, require_login, key_hash
-from app.models import User
+from jsonschema import ValidationError, draft7_format_checker, validate
+from werkzeug.exceptions import BadRequest, Forbidden, UnsupportedMediaType
+
 from app import db
+from app.models import User
+from app.utils import key_hash, require_admin, require_login
 
 
 class UserCollection(Resource):
@@ -42,7 +43,13 @@ class UserCollection(Resource):
             raise BadRequest(description=str(e)) from e
 
         if User.query.filter_by(name=request.json["name"]).first():
-            return "User with the same name already exists", 409
+            return "User with the same name already exists", 400
+
+        validation_result = User.validate_password(
+            request.json["password"])
+
+        if validation_result is not None:
+            return validation_result
 
         user = User(
             name=request.json["name"], password=key_hash(request.json["password"]))
@@ -57,26 +64,81 @@ class UserCollection(Resource):
 
 
 class UserItem(Resource):
+    """Resource for handling getting, updating and deleting existing user information."""
 
     @require_login
     def get(self, user_id, **kwargs):
         """Get an user's information. Requires user authentication"""
-        
+
         if kwargs["login_user_id"] != user_id:
             raise Forbidden
 
         user = User.query.get(user_id)
 
+        game_list = []
+
+        for game in user.games:
+            game_list.append({"id": game.id,
+                              "type": game.type,
+                              "isActive": game.isActive})
+
         user_dict = {
             "id": user.id,
             "name": user.name,
             "turnsPlayed": user.turnsPlayed,
-            "totalTime": user.totalTime
+            "totalTime": user.totalTime,
+            "games": game_list
         }
 
         return user_dict, 200
 
     @require_login
-    def put(self, user_id):
+    def put(self, user_id, **kwargs):
         """Update user information. Requires user authentication"""
-        pass
+
+        if kwargs["login_user_id"] != user_id:
+            raise Forbidden
+
+        if not request.json:
+            raise UnsupportedMediaType
+
+        user_to_modify = User.query.get(user_id)
+
+        if "name" in request.json:
+
+            user_with_name = User.query.filter_by(
+                name=request.json["name"]).first()
+
+            if user_with_name and user_with_name.id is not user_to_modify.id:
+                return "User with the same name already exists. No changes were done.", 400
+
+            user_to_modify.name = request.json["name"]
+
+        if "password" in request.json:
+
+            validation_result = User.validate_password(
+                request.json["password"])
+
+            if validation_result is not None:
+                return validation_result
+
+            user_to_modify.password = key_hash(request.json["password"])
+
+        db.session.commit()
+
+        return Response(status=200,
+                        headers={"Location":
+                                 url_for("api.useritem",
+                                         user_id=user_to_modify.id)})
+
+    @require_login
+    def delete(self, user_id, **kwargs):
+        """Delete an user. Requires user authentication"""
+
+        if kwargs["login_user_id"] != user_id:
+            raise Forbidden
+
+        User.query.filter_by(id=user_id).delete()
+        db.session.commit()
+
+        return 200
