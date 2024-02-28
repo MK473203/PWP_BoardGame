@@ -57,7 +57,7 @@ def _populate_db():
     for i in range(1, 4):
         u = User(
             name="testuser_{}".format(i),
-            password="test123{}"
+            id="{}"
         )
         db.session.add(u)
      
@@ -73,7 +73,7 @@ def _get_user_json(number=1):
     Creates a valid user JSON object to be used for PUT and POST tests.
     """
     
-    return {"name": "extra-user-{}".format(number), "password": "extra{}".format(number)}
+    return {"name": "extra-user-{}".format(number), "id": "10{}".format(number)}
     
 def _check_namespace(client, response):
     """
@@ -158,7 +158,7 @@ class TestUserCollection(object):
     RESOURCE_URL = "/api/users/"
     VALID_USER_DATA = {
         "name": "test-user-5",
-        "password": "testpassword"
+        "id": "1234"
     }
     INVALID_USER_DATA = {
         "name": "test-user-y"
