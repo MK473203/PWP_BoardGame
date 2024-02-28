@@ -1,24 +1,33 @@
 import secrets
+
 from flask import request
 from werkzeug.exceptions import Forbidden
+
 from app.models import User, key_hash
 
-# 3CK1fq9levikwyj5WxueFdtvDmNlKeiz7zK09erDXg8
-ADMIN_KEY_HASH = b'\xa5)\x0f\xe1\xee\xc0\xe3\x91o\x0c\x07\x11\xf1q\x9bgG\xc7\xb4s\n\xbb\xc8@\xb0\x02\x96!\xb7\xc4k1'
+ADMIN_KEY_HASH = key_hash("3CK1fq9levikwyj5WxueFdtvDmNlKeiz7zK09erDXg8")
 
 
 def require_login(func):
+    """
+    Checks whether the incoming request has the login information of an existing user.
+
+    DOES NOT CHECK WHICH USER IT IS. The user's username and id are supplied to the wrapped function in kwargs.
+    """
+
     def wrapper(*args, **kwargs):
-        hashed_key = key_hash(
+        hashed_password = key_hash(
             request.headers.get("password", "").strip())
         name = request.headers.get("username", "").strip()
 
         db_user = User.query.filter_by(name=name).first()
 
         if name is not None and db_user is not None:
-            if secrets.compare_digest(hashed_key, db_user.password):
+            if secrets.compare_digest(hashed_password, db_user.password):
                 kwargs["login_username"] = name
                 kwargs["login_user_id"] = db_user.id
+                kwargs["delete_confirmation"] = request.headers.get(
+                    "delete_confirmation", "").strip()
                 return func(*args, **kwargs)
             raise Forbidden
         else:
@@ -27,6 +36,8 @@ def require_login(func):
 
 
 def require_admin(func):
+    """Checks the incoming request for the admin api key"""
+
     def wrapper(*args, **kwargs):
         hashed_key = key_hash(
             request.headers.get("Api_key", "").strip())
