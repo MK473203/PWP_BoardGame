@@ -100,9 +100,22 @@ def test_create_instances(app):
         assert db_game.players == db_user
 
 
-@pytest.mark.skip
-def test_user_ondelete():
-    pass
+def test_delete_user(app):
+    # Create a user and add it to the database
+    with app.app_context():
+        user = create_test_user()
+        db.session.add(user)
+        db.session.commit()
+
+        # Check that the user is added to the database
+        assert User.query.count() == 1
+
+        # Delete the user
+        db.session.delete(user)
+        db.session.commit()
+
+        # Check that the user is no longer in the database
+        assert User.query.count() == 0
 
 
 @pytest.mark.skip
