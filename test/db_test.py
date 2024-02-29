@@ -7,11 +7,13 @@ from sqlalchemy import event
 from app import create_app, db
 from app.models import User, Game, GameType
 
+
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
+
 
 @pytest.fixture
 def app():
@@ -38,7 +40,8 @@ def create_test_user():
         name="testuser",
         password="test123"
     )
-    
+
+
 @pytest.mark.skip
 def create_test_game():
     pass
@@ -60,7 +63,7 @@ def sample_game_data():
     return {
         "type": 1,
         "state": "Initial",
-        "isActive": True
+        "result": -1
     }
 
 

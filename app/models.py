@@ -1,11 +1,15 @@
-import click
 import hashlib
+import os
+
+import click
+from flask import current_app
 from flask.cli import with_appcontext
 
 from app import db
 
 
 def key_hash(key):
+    """Used for api key and user password hashing"""
     return hashlib.sha256(key.encode()).digest()
 
 
@@ -103,8 +107,8 @@ class Game(db.Model):
                    unique=True, autoincrement=True)
     type = db.Column(db.Integer, db.ForeignKey(
         "GameType.id", ondelete="CASCADE"))
-    isActive = db.Column(db.Boolean, default=True)
     state = db.Column(db.Text)
+    result = db.Column(db.Integer, default=-1)
     currentPlayer = db.Column(db.Integer, db.ForeignKey(
         "User.id", ondelete="SET NULL"), default=None, nullable=True)
     moveHistory = db.Column(db.BLOB, default=None, nullable=True)
@@ -112,19 +116,65 @@ class Game(db.Model):
     players = db.relationship(
         "User", secondary=GamePlayers, back_populates="games")
 
+    @staticmethod
+    def move_schema():
+        """JSON schema for making a move in a game"""
+        schema = {
+            "type": "object",
+            "required": ["move", "moveTime"]
+        }
+        props = schema["properties"] = {}
+        props["moveTime"] = {
+            "type": "integer"
+        }
+        return schema
+
+    @staticmethod
+    def admin_schema():
+        """JSON schema for making a move in a game"""
+        schema = {
+            "type": "object"
+        }
+        props = schema["properties"] = {}
+        props["currentPlayer"] = {
+            "type": "integer",
+            "enum": [id for id in db.session.query(User.id).all()]
+        }
+        return schema
+
 
 @click.command("init-db")
 @with_appcontext
 def init_db_command():
+    """
+    Initializes an empty database file.
+
+    Usage: flask init-db
+    """
+
+    if os.path.isfile(os.path.join(current_app.instance_path, "dev.db")):
+        print("A .db file already exists. Delete it to use this command.")
+        return
+
     db.create_all()
 
 
 @click.command("populate-db")
 @with_appcontext
 def populate_db_command():
+    """
+    Initializes a small example database.
+
+    Usage: flask populate-db
+    """
+
+    if os.path.isfile(os.path.join(current_app.instance_path, "dev.db")):
+        print("A .db file already exists. Delete it to use this command.")
+        return
+
     db.create_all()
 
-    game_type_1 = GameType(name="Tictactoe", defaultState="---------")
+    game_type_1 = GameType(name="tictactoe", defaultState="1---------")
 
     user1 = User(name="user1", password=key_hash("123456789"))
     user2 = User(name="user2", password=key_hash("salasana"))
@@ -138,9 +188,3 @@ def populate_db_command():
     db.session.add(game1)
 
     db.session.commit()
-
-
-@click.command("reset-db")
-@with_appcontext
-def reset_db_command():
-    db.drop_all()

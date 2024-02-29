@@ -1,4 +1,5 @@
 import os
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
@@ -6,6 +7,7 @@ db = SQLAlchemy()
 
 
 def create_app(test_config=None):
+    """Create app instance"""
 
     app = Flask(__name__, instance_relative_config=True)
 
@@ -31,12 +33,10 @@ def create_app(test_config=None):
     db.init_app(app)
     # cache.init_app(app)
 
-    from . import models
-    from . import api
+    from . import api, models
 
     app.register_blueprint(api.api_bp)
     app.cli.add_command(models.init_db_command)
     app.cli.add_command(models.populate_db_command)
-    app.cli.add_command(models.reset_db_command)
 
     return app

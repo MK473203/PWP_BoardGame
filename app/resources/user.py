@@ -22,10 +22,8 @@ class UserCollection(Resource):
         users = User.query.all()
 
         for user in users:
-
             user_dict = {"id": user.id,
-                         "name": user.name}
-
+                        "name": user.name}
             user_list.append(user_dict)
 
         return user_list, 200
@@ -38,7 +36,7 @@ class UserCollection(Resource):
 
         try:
             validate(request.json, User.json_schema(),
-                     format_checker=draft7_format_checker)
+                        format_checker=draft7_format_checker)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
 
@@ -58,9 +56,9 @@ class UserCollection(Resource):
         db.session.commit()
 
         return Response(status=201,
-                        headers={"Location":
-                                 url_for("api.useritem",
-                                         user_id=user.id)})
+                  headers={"Location":
+                           url_for("api.useritem",
+                                   user_id=user.id)})
 
 
 class UserItem(Resource):
@@ -79,8 +77,8 @@ class UserItem(Resource):
 
         for game in user.games:
             game_list.append({"id": game.id,
-                              "type": game.type,
-                              "isActive": game.isActive})
+                        "type": game.type,
+                        "result": game.result})
 
         user_dict = {
             "id": user.id,
@@ -127,9 +125,9 @@ class UserItem(Resource):
         db.session.commit()
 
         return Response(status=200,
-                        headers={"Location":
-                                 url_for("api.useritem",
-                                         user_id=user_to_modify.id)})
+                  headers={"Location":
+                           url_for("api.useritem",
+                                   user_id=user_to_modify.id)})
 
     @require_login
     def delete(self, user_id, **kwargs):

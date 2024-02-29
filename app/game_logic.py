@@ -48,11 +48,11 @@ def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple
        * 2 == Team 2 won
     """
     team = int(old_state[0])
-    new_state = old_state[1:]
+    new_state = list(old_state[1:])
 
     # Check validity
     # type(move) == int and
-    if not is_valid_move(move, team, old_state, game_type):
+    if not is_valid_move(move, team, old_state[1:], game_type):
         return None
     #elif type(move) == list:
         # If first move in checkers jump chain is invalid, prevent move
@@ -80,7 +80,7 @@ def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple
     win_state = get_winner(new_state, team, game_type)
 
     # Add next team to state
-    new_state = str(next_team) + new_state
+    new_state = str(next_team) + "".join(new_state)
 
     return new_state, win_state
 

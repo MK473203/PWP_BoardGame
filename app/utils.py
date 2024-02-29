@@ -12,7 +12,8 @@ def require_login(func):
     """
     Checks whether the incoming request has the login information of an existing user.
 
-    DOES NOT CHECK WHICH USER IT IS. The user's username and id are supplied to the wrapped function in kwargs.
+    DOES NOT CHECK WHICH USER IT IS. 
+    The user's username and id are supplied to the wrapped function in kwargs.
     """
 
     def wrapper(*args, **kwargs):
@@ -30,8 +31,7 @@ def require_login(func):
                     "delete_confirmation", "").strip()
                 return func(*args, **kwargs)
             raise Forbidden
-        else:
-            raise Forbidden
+        raise Forbidden
     return wrapper
 
 

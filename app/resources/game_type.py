@@ -43,7 +43,7 @@ class GameTypeCollection(Resource):
             raise BadRequest(description=str(e)) from e
 
         game_type = GameType(
-            name=request.json["name"], defaultState=request.json["defaultState"])
+            name=request.json["name"].lower(), defaultState=request.json["defaultState"])
 
         db.session.add(game_type)
         db.session.commit()
@@ -81,7 +81,7 @@ class GameTypeItem(Resource):
 
         if "name" in request.json:
 
-            game_type_to_modify.name = request.json["name"]
+            game_type_to_modify.name = request.json["name"].lower()
 
         if "defaultState" in request.json:
             game_type_to_modify.defaultState = request.json["defaultState"]
