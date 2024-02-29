@@ -56,7 +56,7 @@ def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple
         if not (isinstance(move, int) and is_valid_move(move, team, new_state, game_type)):
             return None
         next_mark = "X" if (team == 1) else "O"
-        new_state = new_state[:move] + next_mark + new_state[move+1:]
+        new_state = string_insert(new_state, move, next_mark)
     elif game_type == "checkers":
         if not (isinstance(move, list) and all(isinstance(m, tuple) for m in move)):
             return None
@@ -79,16 +79,16 @@ def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple
 
             # If jumped over a mark, remove it
             if middle % 1 == 0:
-                middle = int(middle)
-                new_state = new_state[:middle] + "-" + new_state[middle+1:]
+                new_state = string_insert(new_state, int(middle), "-")
 
             # Move mark to new position, converting it to king if
             #  it reached the opponents side of the board
+            mark = new_state[move_from]
             if move_to // 8 == (0 if (team == 1) else 7):
-                new_state = new_state[:move_to] + new_state[move_from].upper() + new_state[move_to+1:]
+                new_state = string_insert(new_state, move_to, mark.upper())
             else:
-                new_state = new_state[:move_to] + new_state[move_from] + new_state[move_to+1:]
-            new_state = new_state[:move_from] + "-" + new_state[move_from+1:]
+                new_state = string_insert(new_state, move_to, mark)
+            new_state = string_insert(new_state, move_from, "-")
 
     # Check win conditions
     win_state = get_winner(new_state, team, game_type)
@@ -100,6 +100,11 @@ def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple
     return new_state, win_state
 
 # Helper functions for local use
+## State string update
+def string_insert(string: str, index: int, replacement: str):
+    """ Replaces character at string[index] with given replacement string. """
+    return string[:index] + replacement + string[index+1:]
+
 ## Move validation
 def is_valid_move(move: int | tuple, team: int, state: str, game_type: str) -> bool:
     """
