@@ -40,11 +40,13 @@ def create_test_user():
         name="testuser",
         password="test123"
     )
-
-
-@pytest.mark.skip
+    
+@pytest.fixture
 def create_test_game():
-    pass
+    game_type = GameType(name="Tictactoe", defaultState="_________")
+    db.session.add(game_type)
+    db.session.commit()
+    return Game(type=game_type.id)
 
 # Voi varmaan olla myös create_instances ja luo sekä käyttäjän että pelin
 # Kuten tehty db_test.py esimerkissä
@@ -103,14 +105,41 @@ def test_create_instances(app):
         assert db_game.players == db_user
 
 
-@pytest.mark.skip
-def test_user_ondelete():
-    pass
+def test_delete_user(app):
+    # Luo käyttäjä databaseen
+    with app.app_context():
+        user = create_test_user()
+        db.session.add(user)
+        db.session.commit()
+
+        # Tarkista, että käyttäjä on databasessa
+        assert User.query.count() == 1
+
+        # Poista käyttäjä
+        db.session.delete(user)
+        db.session.commit()
+
+        # Tarkista, että database on tyhjä
+        assert User.query.count() == 0
 
 
-@pytest.mark.skip
-def test_player_ondelete():
-    pass
+def test_player_removed_after_move(app):
+    # Luo User ja Game
+    with app.app_context():
+        user = create_test_user()
+        game = create_test_game()
+
+        # Lisää User Gameen
+        game.players.append(user)
+        db.session.add(game)
+        db.session.commit()
+
+        # Tämänhetkinen pelaaja
+        game.currentPlayer = user.id
+        db.session.commit()
+        
+        # Tarkista, että pelaaja ei ole enää pelissä siirron jälkeen
+        assert user not in game.players
 
 
 # Testi pelityypin luonnille ja tallennukselle databaseen
