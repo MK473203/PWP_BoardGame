@@ -79,15 +79,16 @@ def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple
 
             # If jumped over a mark, remove it
             if middle % 1 == 0:
-                new_state[int(middle)] = "-"
+                middle = int(middle)
+                new_state = new_state[:middle] + "-" + new_state[middle+1:]
 
             # Move mark to new position, converting it to king if
             #  it reached the opponents side of the board
             if move_to // 8 == (0 if (team == 1) else 7):
-                new_state[move_to] = new_state[move_from].upper()
+                new_state = new_state[:move_to] + new_state[move_from].upper() + new_state[move_to+1:]
             else:
-                new_state[move_to] = new_state[move_from]
-            new_state[move_from] = "-"
+                new_state = new_state[:move_to] + new_state[move_from] + new_state[move_to+1:]
+            new_state = new_state[:move_from] + "-" + new_state[move_from+1:]
 
     # Check win conditions
     win_state = get_winner(new_state, team, game_type)
