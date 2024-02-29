@@ -195,8 +195,8 @@ class TestUserCollection(object):
    
 class TestUserItem(object):
     
-    RESOURCE_URL = "/api/users/test-user-1/"
-    INVALID_URL = "/api/users/non-user-x/"
+    RESOURCE_URL = "/api/users/1/"
+    INVALID_URL = "/api/users/x/"
     
     def test_get(self, client):
         resp = client.get(self.RESOURCE_URL)
@@ -218,18 +218,18 @@ class TestUserItem(object):
         resp = client.put(self.INVALID_URL, json=valid)
         assert resp.status_code == 404
         
-        # test with another users's name
-        valid["name"] = "test-user-2"
+        # test with another users's id
+        valid["id"] = "2"
         resp = client.put(self.RESOURCE_URL, json=valid)
         assert resp.status_code == 409
         
         # test with valid
-        valid["name"] = "test-user-1"
+        valid["id"] = "1"
         resp = client.put(self.RESOURCE_URL, json=valid)
         assert resp.status_code == 204
-        
+
         # remove field for 400
-        valid.pop("id")
+        valid.pop("name")
         resp = client.put(self.RESOURCE_URL, json=valid)
         assert resp.status_code == 400
         
