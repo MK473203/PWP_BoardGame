@@ -66,6 +66,22 @@ def sample_game_data():
     }
 
 
+def test_userid(app):
+    with app.app_context():
+        # Create a test User
+        user1 = User(name="test_user_1", password="password123")
+        db.session.add(user1)
+        db.session.commit()
+
+        # Create another user with a different name
+        user2 = User(name="test_user_2", password="password456")
+        db.session.add(user2)
+        db.session.commit()
+
+        # Check that the user IDs are different
+        assert user1.id != user2.id
+        
+
 def test_unique_username(app):
     with app.app_context():
         # Create a test User
