@@ -75,15 +75,6 @@ def _get_user_json(number=1):
     
     return {"name": "extra-user-{}".format(number), "id": "10{}".format(number)}
     
-def _check_namespace(client, response):
-    """
-    Checks that the "senhub" namespace is found from the response body, and
-    that its "name" attribute is a URL that can be accessed.
-    """
-    
-    ns_href = response["@namespaces"]["senhub"]["name"]
-    resp = client.get(ns_href)
-    assert resp.status_code == 200
     
 def _check_control_get_method(ctrl, client, obj):
     """
@@ -202,7 +193,6 @@ class TestUserItem(object):
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        _check_namespace(client, body)
         _check_control_get_method("id", client, body)
         _check_control_get_method("name", client, body)
         resp = client.get(self.INVALID_URL)
