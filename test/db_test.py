@@ -34,14 +34,14 @@ def app():
     os.unlink(db_fname)
 
 
-@pytest.fixture
+
 def create_test_user():
     return User(
         name="testuser",
         password="test123"
     )
     
-@pytest.fixture
+
 def create_test_game():
     game_type = GameType(name="Tictactoe", defaultState="_________")
     db.session.add(game_type)
@@ -70,20 +70,21 @@ def sample_game_data():
 
 
 def test_unique_username(app):
-    # Luo User
-    user1 = User(name="test_user", password="password123")
-    db.session.add(user1)
-    db.session.commit()
-
-    # Luo User samalla nimellä
-    user2 = User(name="test_user", password="password456")
-    db.session.add(user2)
-
-    # Errorhandling
-    with pytest.raises(Exception) as excinfo:
+    with app.app_context():
+        # Luo User
+        user1 = User(name="test_user", password="password123")
+        db.session.add(user1)
         db.session.commit()
 
-    assert "IntegrityError" in str(excinfo.value)
+        # Luo User samalla nimellä
+        user2 = User(name="test_user", password="password456")
+        db.session.add(user2)
+
+        # Errorhandling
+        with pytest.raises(Exception) as excinfo:
+            db.session.commit()
+
+        assert "IntegrityError" in str(excinfo.value)
 
 
 def test_create_instances(app):
@@ -118,6 +119,7 @@ def test_user_playing_game(app):
         # Onko pelaaja pelin listassa
         assert db_user in db_game.players
         assert db_game in db_user.games
+
 
 
 def test_delete_user(app):
@@ -158,16 +160,18 @@ def test_player_removed_after_move(app):
 
 
 # Testi pelityypin luonnille ja tallennukselle databaseen
-def test_game_type_creation(db_session, sample_game_type_data):
-    game_type = GameType(**sample_game_type_data)
-    db_session.add(game_type)
-    db_session.commit()
-    assert game_type.id is not None
+def test_game_type_creation(app, sample_game_type_data):
+    with app.app_context():
+        game_type = GameType(**sample_game_type_data)
+        db.session.add(game_type)
+        db.session.commit()
+        assert game_type.id is not None
 
 
 # Testi pelin luonnille ja tallennukselle databaseen
-def test_game_creation(db_session, sample_game_data):
-    game = Game(**sample_game_data)
-    db_session.add(game)
-    db_session.commit()
-    assert game.id is not None
+def test_game_creation(app, sample_game_data):
+    with app.app_context():
+        game = Game(**sample_game_data)
+        db.session.add(game)
+        db.session.commit()
+        assert game.id is not None
