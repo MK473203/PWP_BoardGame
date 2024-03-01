@@ -10,7 +10,7 @@ from sqlalchemy import event
 from werkzeug.datastructures import Headers
 
 from app import create_app, db
-from app.models import User, Game, GameType
+from app.models import User, Game, GameType, key_hash
 
 TEST_KEY = "verysafetestkey"
 
@@ -61,10 +61,7 @@ def _populate_db():
         )
         db.session.add(u)
      
-    db_key = ApiKey(
-        key=ApiKey.key_hash(TEST_KEY),
-        admin=True
-    )
+    db_key = key_hash(TEST_KEY)
     db.session.add(db_key)        
     db.session.commit()
     
@@ -116,7 +113,7 @@ def _check_control_put_method(ctrl, client, obj):
     schema = ctrl_obj["schema"]
     assert method == "put"
     assert encoding == "json"
-    body = _get_sensor_json()
+    body = _get_user_json()
     body["name"] = obj["name"]
     validate(body, schema)
     resp = client.put(href, json=body)
@@ -139,7 +136,7 @@ def _check_control_post_method(ctrl, client, obj):
     schema = ctrl_obj["schema"]
     assert method == "post"
     assert encoding == "json"
-    body = _get_sensor_json()
+    body = _get_user_json()
     validate(body, schema)
     resp = client.post(href, json=body)
     assert resp.status_code == 201
