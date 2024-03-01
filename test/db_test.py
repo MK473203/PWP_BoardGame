@@ -98,11 +98,26 @@ def test_create_instances(app):
         assert User.query.count() == 1
         assert Game.query.count() == 1
 
+def test_user_playing_game(app):
+    # Testi, että User löytyy pelistä
+    with app.app_context():
+        # Luo User ja Game
+        user = create_test_user()
+        game = create_test_game()
+        db.session.add(user)
+        db.session.add(game)
+        db.session.commit()
+
+        # Lisää User Gamen pelaajalistaan
+        game.players.append(user)
+        db.session.commit()
+
         db_user = User.query.first()
         db_game = Game.query.first()
 
-        assert db_user.games == db_game
-        assert db_game.players == db_user
+        # Onko pelaaja pelin listassa
+        assert db_user in db_game.players
+        assert db_game in db_user.games
 
 
 def test_delete_user(app):
