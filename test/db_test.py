@@ -34,7 +34,6 @@ def app():
     os.unlink(db_fname)
 
 
-
 def create_test_user():
     return User(
         name="testuser",
@@ -47,9 +46,6 @@ def create_test_game():
     db.session.add(game_type)
     db.session.commit()
     return Game(type=game_type.id)
-
-# Voi varmaan olla myös create_instances ja luo sekä käyttäjän että pelin
-# Kuten tehty db_test.py esimerkissä
 
 
 @pytest.fixture
@@ -99,6 +95,7 @@ def test_create_instances(app):
         assert User.query.count() == 1
         assert Game.query.count() == 1
 
+
 def test_user_playing_game(app):
     # Testi, että User löytyy pelistä
     with app.app_context():
@@ -119,7 +116,6 @@ def test_user_playing_game(app):
         # Onko pelaaja pelin listassa
         assert db_user in db_game.players
         assert db_game in db_user.games
-
 
 
 def test_delete_user(app):
