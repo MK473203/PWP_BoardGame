@@ -5,7 +5,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy import event
 
 from app import create_app, db
-from app.game_logic import apply_move, tictactoe_winning_lines
+from app.game_logic import apply_move
 from app.models import User, Game, GameType
 
 
