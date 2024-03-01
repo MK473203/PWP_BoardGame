@@ -13,7 +13,7 @@ api.add_resource(UserCollection, "/users/")
 api.add_resource(UserItem, "/users/<int:user_id>")
 
 api.add_resource(GameCollection, "/games/")
-api.add_resource(RandomGame, "/games/random/<int:game_type>")
+api.add_resource(RandomGame, "/games/random/<game_type:game_type>")
 api.add_resource(GameItem, "/games/<int:game_id>")
 
 api.add_resource(GameTypeCollection, "/game_types/")

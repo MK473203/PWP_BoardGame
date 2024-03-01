@@ -77,7 +77,7 @@ class GameItem(Resource):
     def get(self, game_id):
         """Get information about a game instance
             Input: id of the game in the address
-            Output: All relevant information on the specified game
+            Output: Dictionary of all relevant information on the specified game
         """
         game = Game.query.filter_by(id=game_id).first()
         if not game:
