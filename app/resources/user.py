@@ -16,6 +16,8 @@ class UserCollection(Resource):
         """
         Get a list of all users.
         User passwords not included.
+        Input:
+        Output: A list of all users
         """
 
         user_list = []
@@ -29,7 +31,10 @@ class UserCollection(Resource):
         return user_list, 200
 
     def post(self):
-        """Create a new user"""
+        """Create a new user
+            Input:Json with the fields 'name' and 'password'
+            Output: Response with a header to the location of the new user
+        """
 
         if not request.json:
             raise UnsupportedMediaType
@@ -66,7 +71,10 @@ class UserItem(Resource):
 
     @require_login
     def get(self, user_id, **kwargs):
-        """Get an user's information. Requires user authentication"""
+        """Get an user's information. Requires user authentication
+            Input: User id in the address
+            Output: Dictionary of all relevant information on the specified user
+        """
 
         if kwargs["login_user_id"] != user_id:
             raise Forbidden
@@ -92,7 +100,10 @@ class UserItem(Resource):
 
     @require_login
     def put(self, user_id, **kwargs):
-        """Update user information. Requires user authentication"""
+        """Update user information. Requires user authentication
+            Input: User id in the address and json with the fields 'name' and/or 'password'
+            Output: Response with a header to the location of the updated user
+        """
 
         if kwargs["login_user_id"] != user_id:
             raise Forbidden
@@ -131,7 +142,10 @@ class UserItem(Resource):
 
     @require_login
     def delete(self, user_id, **kwargs):
-        """Delete an user. Requires user authentication"""
+        """Delete an user. Requires user authentication
+            Input: User id in the address
+            Output: 
+        """
 
         if kwargs["login_user_id"] != user_id:
             raise Forbidden

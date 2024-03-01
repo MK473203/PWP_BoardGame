@@ -14,6 +14,8 @@ class GameTypeCollection(Resource):
     def get(self):
         """
         Get a list of all game types.
+        Input:
+        Output: List of all game types
         """
 
         game_type_list = []
@@ -31,7 +33,10 @@ class GameTypeCollection(Resource):
 
     @require_admin
     def post(self):
-        """Create a new game type"""
+        """Create a new game type
+            Input: json with the fields 'name' and 'defaultState'
+            Output: Response with a header to the location of the new game type
+        """
 
         if not request.json:
             raise UnsupportedMediaType
@@ -58,7 +63,10 @@ class GameTypeItem(Resource):
     """Resource for handling getting, updating and deleting existing game type information."""
 
     def get(self, game_type_id):
-        """Get an game type's information"""
+        """Get an game type's information
+            Input: game type id in the address
+            Output: Dictionary with all relevant information on the specified game type
+        """
 
         game_type = GameType.query.get(game_type_id)
 
@@ -72,7 +80,10 @@ class GameTypeItem(Resource):
 
     @require_admin
     def put(self, game_type_id):
-        """Update a game type's information. Requires admin privileges"""
+        """Update a game type's information. Requires admin privileges
+            Input: Game type id in the address and json with the fields 'name' and/or 'defaultState'
+            Output: Response with a header to the location of the updated game type
+        """
 
         if not request.json:
             raise UnsupportedMediaType
@@ -95,7 +106,10 @@ class GameTypeItem(Resource):
 
     @require_admin
     def delete(self, game_type_id):
-        """Delete a game type. Requires admin privileges."""
+        """Delete a game type. Requires admin privileges.
+            Input: Game type id in the address
+            Output: 
+        """
 
         GameType.query.filter_by(id=game_type_id).delete()
         db.session.commit()

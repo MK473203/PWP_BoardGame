@@ -15,9 +15,14 @@ from app.utils import ADMIN_KEY_HASH, require_admin, require_login
 
 
 class GameCollection(Resource):
+    """Resource for handling games"""
 
     def get(self):
-        """Get a list of all games"""
+        """Get a list of all games
+            Input:
+            Output: A list of all games
+        """
+
         games = []
         for game in Game.query.all():
             player = User.query.filter_by(id=game.currentPlayer).first()
@@ -39,7 +44,10 @@ class GameCollection(Resource):
         return games, 200
 
     def post(self):
-        """Create a new game instance"""
+        """Create a new game instance
+            Input: Json with the fields 'type' and 'user'
+            Output: A Response with a header to the url of the created game
+        """
         try:
             if not request.is_json:
                 return "Request content type must be JSON", 415
@@ -64,9 +72,13 @@ class GameCollection(Resource):
 
 
 class GameItem(Resource):
+    """Resource for handling getting, updating and deleting existing game information."""
 
     def get(self, game_id):
-        """Get information about a game instance"""
+        """Get information about a game instance
+            Input: id of the game in the address
+            Output: All relevant information on the specified game
+        """
         game = Game.query.filter_by(id=game_id).first()
         if not game:
             return "Game not found", 409
@@ -105,6 +117,7 @@ class GameItem(Resource):
 
         move: game type specific integer or list of tuples signifying the move(s) to play
         moveTime: Time in seconds that the player took to make the move (integer)
+        Output: new game state or nothing
         """
 
         db_game = Game.query.get(game_id)
@@ -191,7 +204,10 @@ class GameItem(Resource):
 
     @require_admin
     def delete(self, game_id):
-        """Delete a game instance. Requires admin privileges."""
+        """Delete a game instance. Requires admin privileges.
+            Input: Id of desired game
+            Output:
+        """
 
         Game.query.filter_by(id=game_id).delete()
         db.session.commit()
@@ -208,6 +224,8 @@ class RandomGame(Resource):
         """
         Redirects to the id of an random game with no current player and assigns the player to it.
         Should not be spammed!!! Creates a bunch of new games.
+            Input: Game type in the address
+            Output: Redirect to the url of chosen/created game
         """
         if not GameType.query.filter_by(id=game_type).first():
             return "This GameType does not exist", 409
