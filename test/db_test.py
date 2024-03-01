@@ -189,3 +189,19 @@ def test_apply_single_move_tictactoe(app):
         assert new_state == "2----X----"  # Oletus, tiimin 1 siirto indeksiin 4
         # Tarkista, ettei peli loppunut
         assert game_result == -1
+
+
+def test_invalid_move_tictactoe(app):
+    with app.app_context():
+
+        # Luo testipelitila
+        old_state = "2----X----"  # Tiimin 2 vuoro
+        move = 4  # Esimerkkisiirto, invalid
+        game_type = "tictactoe"
+
+        # Tee siirto
+        result = apply_move(move, old_state, game_type)
+
+        # Tarkista, että siirron tulos on None (virheellinen siirto)
+        assert result is None
+        
