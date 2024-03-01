@@ -174,7 +174,7 @@ def test_game_creation(app, sample_game_data):
         assert game.id is not None
 
 
-def test_apply_move_tictactoe_single_move(app):
+def test_apply_single_move_tictactoe(app):
     with app.app_context():
 
         # Luo testipeli
