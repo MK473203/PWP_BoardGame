@@ -171,3 +171,20 @@ def test_game_creation(app, sample_game_data):
         db.session.add(game)
         db.session.commit()
         assert game.id is not None
+
+
+def test_apply_move_tictactoe_single_move(app):
+    with app.app_context():
+
+        # Luo testipeli
+        old_state = "1---------"  # Tiimin 1 vuoro
+        move = 4  # Esimerkkisiirto, valid
+        game_type = "tictactoe"
+
+        # Tee siirto
+        new_state, game_result = apply_move(move, old_state, game_type)
+
+        # Tarkista, että pelitila on oikea siirron jälkeen
+        assert new_state == "2----X----"  # Oletus, tiimin 1 siirto indeksiin 4
+        # Tarkista, ettei peli loppunut
+        assert game_result == -1
