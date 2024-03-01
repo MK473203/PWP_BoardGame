@@ -4,6 +4,8 @@ import os
 import click
 from flask import current_app
 from flask.cli import with_appcontext
+from werkzeug.exceptions import NotFound
+from werkzeug.routing import BaseConverter
 
 from app import db
 
@@ -20,7 +22,16 @@ GamePlayers = db.Table("GamePlayers",
                            "User.id", ondelete="SET NULL"), primary_key=True),
                        db.Column("team", db.Integer)
                        )
-
+class GameTypeConverter(BaseConverter):
+    
+    def to_python(self, game_type_name):
+        db_game_type = GameType.query.filter_by(name=game_type_name).first()
+        if db_game_type is None:
+            raise NotFound
+        return db_game_type
+        
+    def to_url(self, db_game_type):
+        return db_game_type.name
 
 class GameType(db.Model):
     """SQLAlchemy model class for game types"""

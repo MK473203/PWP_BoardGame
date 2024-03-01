@@ -17,4 +17,4 @@ api.add_resource(RandomGame, "/games/random/<int:game_type>")
 api.add_resource(GameItem, "/games/<int:game_id>")
 
 api.add_resource(GameTypeCollection, "/game_types/")
-api.add_resource(GameTypeItem, "/game_types/<int:game_type_id>")
+api.add_resource(GameTypeItem, "/game_types/<game_type:game_type>")
