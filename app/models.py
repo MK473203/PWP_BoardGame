@@ -22,6 +22,7 @@ GamePlayers = db.Table("GamePlayers",
                            "User.id", ondelete="SET NULL"), primary_key=True),
                        db.Column("team", db.Integer)
                        )
+
 class GameTypeConverter(BaseConverter):
     
     def to_python(self, game_type_name):
@@ -32,6 +33,17 @@ class GameTypeConverter(BaseConverter):
         
     def to_url(self, db_game_type):
         return db_game_type.name
+    
+class UserConverter(BaseConverter):
+    
+    def to_python(self, user_name):
+        db_user = User.query.filter_by(name=user_name).first()
+        if db_user is None:
+            raise NotFound
+        return db_user
+        
+    def to_url(self, db_user):
+        return db_user.name
 
 class GameType(db.Model):
     """SQLAlchemy model class for game types"""

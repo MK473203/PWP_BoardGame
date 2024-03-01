@@ -2,7 +2,7 @@ import os
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from app.models import GameTypeConverter
+from app.models import GameTypeConverter, UserConverter
 
 db = SQLAlchemy()
 
@@ -40,5 +40,6 @@ def create_app(test_config=None):
     app.cli.add_command(models.init_db_command)
     app.cli.add_command(models.populate_db_command)
     app.url_map.converters["game_type"] = GameTypeConverter
+    app.url_map.converters["user"] = UserConverter
 
     return app

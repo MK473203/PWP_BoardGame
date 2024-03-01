@@ -70,16 +70,14 @@ class UserItem(Resource):
     """Resource for handling getting, updating and deleting existing user information."""
 
     @require_login
-    def get(self, user_id, **kwargs):
+    def get(self, user, **kwargs):
         """Get an user's information. Requires user authentication
             Input: User id in the address
             Output: Dictionary of all relevant information on the specified user
         """
 
-        if kwargs["login_user_id"] != user_id:
+        if kwargs["login_user_id"] != user.id:
             raise Forbidden
-
-        user = User.query.get(user_id)
 
         game_list = []
 
@@ -99,19 +97,17 @@ class UserItem(Resource):
         return user_dict, 200
 
     @require_login
-    def put(self, user_id, **kwargs):
+    def put(self, user_to_modify, **kwargs):
         """Update user information. Requires user authentication
             Input: User id in the address and json with the fields 'name' and/or 'password'
             Output: Response with a header to the location of the updated user
         """
 
-        if kwargs["login_user_id"] != user_id:
+        if kwargs["login_user_id"] != user_to_modify.id:
             raise Forbidden
 
         if not request.json:
             raise UnsupportedMediaType
-
-        user_to_modify = User.query.get(user_id)
 
         if "name" in request.json:
 
@@ -141,16 +137,16 @@ class UserItem(Resource):
                                    user_id=user_to_modify.id)})
 
     @require_login
-    def delete(self, user_id, **kwargs):
+    def delete(self, user, **kwargs):
         """Delete an user. Requires user authentication
             Input: User id in the address
             Output: 
         """
 
-        if kwargs["login_user_id"] != user_id:
+        if kwargs["login_user_id"] != user.id:
             raise Forbidden
 
-        User.query.filter_by(id=user_id).delete()
+        User.query.filter_by(id=user.id).delete()
         db.session.commit()
 
         return 200

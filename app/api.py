@@ -10,7 +10,7 @@ api = Api(api_bp)
 
 # Routing luonnos. Muuttakaa jos keksitte jotain parempaa.
 api.add_resource(UserCollection, "/users/")
-api.add_resource(UserItem, "/users/<int:user_id>")
+api.add_resource(UserItem, "/users/<user:user>")
 
 api.add_resource(GameCollection, "/games/")
 api.add_resource(RandomGame, "/games/random/<game_type:game_type>")
