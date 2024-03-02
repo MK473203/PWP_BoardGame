@@ -23,27 +23,32 @@ GamePlayers = db.Table("GamePlayers",
                        db.Column("team", db.Integer)
                        )
 
+
 class GameTypeConverter(BaseConverter):
-    
+    """Class for converting game type names to python objects and vice versa"""
+
     def to_python(self, game_type_name):
         db_game_type = GameType.query.filter_by(name=game_type_name).first()
         if db_game_type is None:
             raise NotFound
         return db_game_type
-        
+
     def to_url(self, db_game_type):
         return db_game_type.name
-    
+
+
 class UserConverter(BaseConverter):
-    
+    """Class for converting user names to python objects and vice versa"""
+
     def to_python(self, user_name):
         db_user = User.query.filter_by(name=user_name).first()
         if db_user is None:
             raise NotFound
         return db_user
-        
+
     def to_url(self, db_user):
         return db_user.name
+
 
 class GameType(db.Model):
     """SQLAlchemy model class for game types"""
@@ -51,7 +56,7 @@ class GameType(db.Model):
 
     id = db.Column(db.Integer, primary_key=True,
                    unique=True, autoincrement=True)
-    name = db.Column(db.String(64))
+    name = db.Column(db.String(64), unique=True)
     defaultState = db.Column(db.String(64))
 
     @staticmethod
@@ -154,14 +159,14 @@ class Game(db.Model):
 
     @staticmethod
     def admin_schema():
-        """JSON schema for making a move in a game"""
+        """JSON schema for making admin privileged modifications"""
         schema = {
             "type": "object"
         }
         props = schema["properties"] = {}
         props["currentPlayer"] = {
             "type": "integer",
-            "enum": [id for id in db.session.query(User.id).all()]
+            "enum": [id for id in db.session.query(User.id).all()] + [None]
         }
         return schema
 

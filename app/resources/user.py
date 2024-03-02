@@ -3,7 +3,7 @@ from flask_restful import Resource
 from jsonschema import ValidationError, draft7_format_checker, validate
 from werkzeug.exceptions import BadRequest, Forbidden, UnsupportedMediaType
 
-from app import db
+from app import db, cache
 from app.models import User
 from app.utils import key_hash, require_admin, require_login
 
@@ -12,6 +12,7 @@ class UserCollection(Resource):
     """Resource for handling user creation. Admins can also get a list of all users."""
 
     @require_admin
+    @cache.cached(timeout=900)
     def get(self):
         """
         Get a list of all users.
@@ -25,7 +26,7 @@ class UserCollection(Resource):
 
         for user in users:
             user_dict = {"id": user.id,
-                        "name": user.name}
+                         "name": user.name}
             user_list.append(user_dict)
 
         return user_list, 200
@@ -41,7 +42,7 @@ class UserCollection(Resource):
 
         try:
             validate(request.json, User.json_schema(),
-                        format_checker=draft7_format_checker)
+                     format_checker=draft7_format_checker)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
 
@@ -61,15 +62,16 @@ class UserCollection(Resource):
         db.session.commit()
 
         return Response(status=201,
-                  headers={"Location":
-                           url_for("api.useritem",
-                                   user_id=user.id)})
+                        headers={"Location":
+                                 url_for("api.useritem",
+                                         user_id=user.id)})
 
 
 class UserItem(Resource):
     """Resource for handling getting, updating and deleting existing user information."""
 
     @require_login
+    @cache.cached(timeout=300)
     def get(self, user, **kwargs):
         """Get an user's information. Requires user authentication
             Input: User id in the address
@@ -83,8 +85,8 @@ class UserItem(Resource):
 
         for game in user.games:
             game_list.append({"id": game.id,
-                        "type": game.type,
-                        "result": game.result})
+                              "type": game.type,
+                              "result": game.result})
 
         user_dict = {
             "id": user.id,
@@ -130,11 +132,12 @@ class UserItem(Resource):
             user_to_modify.password = key_hash(request.json["password"])
 
         db.session.commit()
+        cache.delete(request.path)
 
         return Response(status=200,
-                  headers={"Location":
-                           url_for("api.useritem",
-                                   user_id=user_to_modify.id)})
+                        headers={"Location":
+                                 url_for("api.useritem",
+                                         user_id=user_to_modify.id)})
 
     @require_login
     def delete(self, user, **kwargs):
@@ -148,5 +151,6 @@ class UserItem(Resource):
 
         User.query.filter_by(id=user.id).delete()
         db.session.commit()
+        cache.delete(request.path)
 
         return 200

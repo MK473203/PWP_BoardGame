@@ -3,7 +3,7 @@ from flask_restful import Resource
 from jsonschema import ValidationError, draft7_format_checker, validate
 from werkzeug.exceptions import BadRequest, UnsupportedMediaType
 
-from app import db
+from app import db, cache
 from app.models import GameType
 from app.utils import require_admin
 
@@ -11,6 +11,7 @@ from app.utils import require_admin
 class GameTypeCollection(Resource):
     """Resource for handling game types."""
 
+    @cache.cached(timeout=None)
     def get(self):
         """
         Get a list of all game types.
@@ -53,6 +54,8 @@ class GameTypeCollection(Resource):
         db.session.add(game_type)
         db.session.commit()
 
+        cache.delete(request.path)
+
         return Response(status=201,
                         headers={"Location":
                                  url_for("api.gametypeitem",
@@ -62,6 +65,7 @@ class GameTypeCollection(Resource):
 class GameTypeItem(Resource):
     """Resource for handling getting, updating and deleting existing game type information."""
 
+    @cache.cached(timeout=None)
     def get(self, game_type):
         """Get an game type's information
             Input: game type in the address
@@ -95,6 +99,8 @@ class GameTypeItem(Resource):
 
         db.session.commit()
 
+        cache.delete(request.path)
+
         return Response(status=200,
                         headers={"Location":
                                  url_for("api.gametypeitem",
@@ -109,5 +115,6 @@ class GameTypeItem(Resource):
 
         GameType.query.filter_by(id=game_type.id).delete()
         db.session.commit()
+        cache.delete(request.path)
 
         return 200

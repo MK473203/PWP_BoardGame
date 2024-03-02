@@ -2,3 +2,7 @@ __pycache__
 env
 venv
 start.bat
+.vscode
+boardgame.egg-info
+.coverage
+instance/cache

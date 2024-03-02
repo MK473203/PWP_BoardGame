@@ -33,16 +33,15 @@ class GameCollection(Resource):
                 gametype = gametype.name
             games.append({
                 "id": game.id,
-                # Replace 'gametype' with 'game.type' to get id instead
                 "type": gametype,
                 "result": game.result,
                 "state": game.state,
-                # Replace 'player' with 'game.currentPlayer' to get id instead
                 "currentPlayer": player
             })
 
         return games, 200
 
+    @require_admin
     def post(self):
         """Create a new game instance
             Input: Json with the fields 'type' and 'user'
@@ -66,7 +65,8 @@ class GameCollection(Resource):
             game.players = [userobj]
             db.session.add(game)
             db.session.commit()
-            return Response(status=201, headers={"location": url_for("api.gameitem", game_id=game.id)})
+            return Response(status=201, headers={"location":
+                                                 url_for("api.gameitem", game_id=game.id)})
         except KeyError:
             return "Incomplete request - missing fields", 400
 
@@ -87,11 +87,9 @@ class GameItem(Resource):
             player = player.name
         players = []
         for p in game.players:
-            # Replace 'p.name' with 'p.id' to make players list into id list instead
             players.append(p.name)
         info = {
             "id": game.id,
-            # Replace 'GameType.query.filter_by(id = game.type).first().name' with 'game.type' to get id instead
             "type": GameType.query.filter_by(id=game.type).first().name,
             "result": game.result,
             "state": game.state,
@@ -154,8 +152,8 @@ class GameItem(Resource):
             move_result = apply_move(
                 request.json["move"], db_game.state, game_type)
             if move_result is None:
-                return "Requested move is invalid. \
-                        Try again or leave the game with an empty move \"\"", 400
+                return "Requested move is invalid. " + \
+                    "Try again or leave the game with an empty move \"\"", 400
 
             User.query.get(db_game.currentPlayer).totalTime \
                 += request.json["moveTime"]
@@ -220,7 +218,7 @@ class RandomGame(Resource):
     Resource for getting a random game instance of a given game type. 
     """
     @require_login
-    def get(self, game_type, **kwargs):
+    def post(self, game_type, **kwargs):
         """
         Redirects to the id of an random game with no current player and assigns the player to it.
         Should not be spammed!!! Creates a bunch of new games.
@@ -236,7 +234,8 @@ class RandomGame(Resource):
             print(game.players)
 
         user_played_games = [
-            game.id for game in empty_games if kwargs["login_user_id"] in [user.id for user in game.players]]
+            game.id for game in empty_games
+            if kwargs["login_user_id"] in [user.id for user in game.players]]
 
         print(user_played_games)
 
@@ -250,7 +249,8 @@ class RandomGame(Resource):
             if game.id in user_played_games:
                 print("game id is in user played games" + str(game.id))
                 games_on_the_same_team = [
-                    game_id for game_id, team in game_id_and_team_list if team == int(game.state[0])]
+                    game_id for game_id, team in game_id_and_team_list
+                    if team == int(game.state[0])]
                 if game.id in games_on_the_same_team:
                     available_games.append(game)
             else:
