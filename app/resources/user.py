@@ -103,13 +103,13 @@ class UserItem(Resource):
         return user_dict, 200
 
     @require_login
-    def put(self, user_to_modify, **kwargs):
+    def put(self, user, **kwargs):
         """Update user information. Requires user authentication
             Input: User id in the address and json with the fields 'name' and/or 'password'
             Output: Response with a header to the location of the updated user
         """
 
-        if kwargs["login_user_id"] != user_to_modify.id:
+        if kwargs["login_user_id"] != user.id:
             raise Forbidden
 
         if not request.json:
@@ -120,10 +120,10 @@ class UserItem(Resource):
             user_with_name = User.query.filter_by(
                 name=request.json["name"]).first()
 
-            if user_with_name and user_with_name.id != user_to_modify.id:
+            if user_with_name and user_with_name.id != user.id:
                 return "User with the same name already exists. No changes were done.", 400
 
-            user_to_modify.name = request.json["name"]
+            user.name = request.json["name"]
 
         if "password" in request.json:
 
@@ -133,11 +133,11 @@ class UserItem(Resource):
             if validation_result is not None:
                 return validation_result
 
-            user_to_modify.password = key_hash(request.json["password"])
+            user.password = key_hash(request.json["password"])
 
         db.session.commit()
 
-        item_url = "view/" + url_for("api.useritem", user=user_to_modify)
+        item_url = "view/" + url_for("api.useritem", user=user)
         collection_url = "view/" + url_for("api.usercollection")
 
         if cache.has(item_url):
@@ -148,7 +148,7 @@ class UserItem(Resource):
         return Response(status=200,
                         headers={"Location":
                                  url_for("api.useritem",
-                                         user=user_to_modify)})
+                                         user=user)})
 
     @require_login
     def delete(self, user, **kwargs):

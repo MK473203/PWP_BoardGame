@@ -86,7 +86,7 @@ class GameTypeItem(Resource):
         return game_type_dict, 200
 
     @require_admin
-    def put(self, game_type_to_modify):
+    def put(self, game_type):
         """Update a game type's information. Requires admin privileges
             Input: Game type in the address and json with the fields 'name' and/or 'defaultState'
             Output: Response with a header to the location of the updated game type
@@ -100,18 +100,18 @@ class GameTypeItem(Resource):
             game_type_with_name = GameType.query.filter_by(
                 name=request.json["name"]).first()
 
-            if game_type_with_name and game_type_with_name.id != game_type_to_modify.id:
+            if game_type_with_name and game_type_with_name.id != game_type.id:
                 return "Game type with the same name already exists. No changes were done.", 400
 
-            game_type_to_modify.name = request.json["name"].lower()
+            game_type.name = request.json["name"].lower()
 
         if "defaultState" in request.json:
-            game_type_to_modify.defaultState = request.json["defaultState"]
+            game_type.defaultState = request.json["defaultState"]
 
         db.session.commit()
 
         item_url = "view/" + \
-            url_for("api.gametypeitem", game_type=game_type_to_modify)
+            url_for("api.gametypeitem", game_type=game_type)
         collection_url = "view/" + url_for("api.gametypecollection")
 
         if cache.has(item_url):
@@ -122,7 +122,7 @@ class GameTypeItem(Resource):
         return Response(status=200,
                         headers={"Location":
                                  url_for("api.gametypeitem",
-                                         game_type=game_type_to_modify)})
+                                         game_type=game_type)})
 
     @require_admin
     def delete(self, game_type):

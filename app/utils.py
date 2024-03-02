@@ -27,8 +27,6 @@ def require_login(func):
             if secrets.compare_digest(hashed_password, db_user.password):
                 kwargs["login_username"] = name
                 kwargs["login_user_id"] = db_user.id
-                kwargs["delete_confirmation"] = request.headers.get(
-                    "delete_confirmation", "").strip()
                 return func(*args, **kwargs)
             raise Forbidden
         raise Forbidden

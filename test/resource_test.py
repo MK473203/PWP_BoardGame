@@ -13,16 +13,19 @@ from app import create_app, db
 from app.models import User, Game, GameType, key_hash
 
 TEST_KEY = "verysafetestkey"
+ADMIN_KEY = "3CK1fq9levikwyj5WxueFdtvDmNlKeiz7zK09erDXg8"
 
 
 class AuthHeaderClient(FlaskClient):
 
     def open(self, *args, **kwargs):
-        api_key_headers = Headers({
-            'sensorhub-api-key': TEST_KEY
+        auth_headers = Headers({
+            "Api-key": ADMIN_KEY,
+            "username": "testuser_1",
+            "password": "password1"
         })
         headers = kwargs.pop('headers', Headers())
-        headers.extend(api_key_headers)
+        headers.extend(auth_headers)
         kwargs['headers'] = headers
         return super().open(*args, **kwargs)
 
@@ -56,15 +59,17 @@ def client():
 
 
 def _populate_db():
+
+    tictactoe = GameType(name="tictactoe", defaultState="1---------")
+    db.session.add(tictactoe)
+
     for i in range(1, 4):
         u = User(
             name="testuser_{}".format(i),
-            id="{}"
+            password=key_hash("password{}".format(i))
         )
         db.session.add(u)
-     
-    db_key = key_hash(TEST_KEY)
-    db.session.add(db_key)        
+
     db.session.commit()
 
 
@@ -73,9 +78,9 @@ def _get_user_json(number=1):
     Creates a valid user JSON object to be used for PUT and POST tests.
     """
 
-    return {"name": "extra-user-{}".format(number), "id": "10{}".format(number)}
-    
-    
+    return {"name": "extra-user-{}".format(number), "password": "pass10{}".format(number)}
+
+
 def _check_control_get_method(ctrl, client, obj):
     """
     Checks a GET type control from a JSON object be it root document or an item
@@ -153,7 +158,7 @@ class TestUserCollection(object):
     RESOURCE_URL = "/api/users/"
     VALID_USER_DATA = {
         "name": "test-user-5",
-        "id": "1234"
+        "password": "password1"
     }
     INVALID_USER_DATA = {
         "name": "test-user-y"
@@ -175,7 +180,7 @@ class TestUserCollection(object):
     def test_post(self, client):
         # test with wrong content type
         resp = client.post(self.RESOURCE_URL, data="notjson",
-                           headers={"Content-Type": "text"})
+                           headers=Headers({"Content-Type": "text"}))
         assert resp.status_code in (400, 415)
 
         # test with invalid user data
@@ -185,22 +190,28 @@ class TestUserCollection(object):
         # test with valid user data
         resp = client.post(self.RESOURCE_URL, json=self.VALID_USER_DATA)
         assert resp.status_code == 201
+        assert resp.headers["Location"] == "/api/users/test-user-5"
         # check if the user is created
-        assert User.query.filter_by(
-            name=self.VALID_USER_DATA["name"]).first() is not None
+        resp = client.get(self.RESOURCE_URL)
+        body = json.loads(resp.data)
+        assert self.VALID_USER_DATA["name"] in [user["name"] for user in body]
 
 
 class TestUserItem(object):
 
-    RESOURCE_URL = "/api/users/1/"
-    INVALID_URL = "/api/users/x/"
+    RESOURCE_URL = "/api/users/testuser_1"
+    RESOURCE_URL_2 = "/api/users/testuser_2"
+    INVALID_URL = "/api/users/x"
 
     def test_get(self, client):
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        _check_control_get_method("id", client, body)
-        _check_control_get_method("name", client, body)
+        assert body["id"] == 1
+        assert body["name"] == "testuser_1"
+        assert body["turnsPlayed"] == 0
+        assert body["totalTime"] == 0
+        assert body["games"] == []
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
 
@@ -215,25 +226,28 @@ class TestUserItem(object):
         resp = client.put(self.INVALID_URL, json=valid)
         assert resp.status_code == 404
 
-        # test with another users's id
-        valid["id"] = "2"
-        resp = client.put(self.RESOURCE_URL, json=valid)
-        assert resp.status_code == 409
-
-        # test with valid
-        valid["id"] = "1"
-        resp = client.put(self.RESOURCE_URL, json=valid)
-        assert resp.status_code == 204
-
-        # remove field for 400
-        valid.pop("name")
+        # test with another users's name
+        valid["name"] = "testuser_2"
         resp = client.put(self.RESOURCE_URL, json=valid)
         assert resp.status_code == 400
 
+        # test with valid
+        valid["name"] = "cool_name"
+        resp = client.put(self.RESOURCE_URL, json=valid)
+        assert resp.status_code == 200
+
     def test_delete(self, client):
+        # User should be deleted successfully
         resp = client.delete(self.RESOURCE_URL)
-        assert resp.status_code == 204
+        assert resp.status_code == 200
+
+        # Trying to delete the same user should lead to 404
         resp = client.delete(self.RESOURCE_URL)
         assert resp.status_code == 404
+
+        # Trying to delete an user we're not logged in as should be forbidden
+        resp = client.delete(self.RESOURCE_URL_2)
+        assert resp.status_code == 403
+
         resp = client.delete(self.INVALID_URL)
         assert resp.status_code == 404
