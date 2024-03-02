@@ -61,10 +61,14 @@ class UserCollection(Resource):
         db.session.add(user)
         db.session.commit()
 
+        collection_url = "view/" + url_for("api.usercollection")
+        if cache.has(collection_url):
+            cache.delete(collection_url)
+
         return Response(status=201,
                         headers={"Location":
                                  url_for("api.useritem",
-                                         user_id=user.id)})
+                                         user=user)})
 
 
 class UserItem(Resource):
@@ -116,7 +120,7 @@ class UserItem(Resource):
             user_with_name = User.query.filter_by(
                 name=request.json["name"]).first()
 
-            if user_with_name and user_with_name.id is not user_to_modify.id:
+            if user_with_name and user_with_name.id != user_to_modify.id:
                 return "User with the same name already exists. No changes were done.", 400
 
             user_to_modify.name = request.json["name"]
@@ -132,12 +136,19 @@ class UserItem(Resource):
             user_to_modify.password = key_hash(request.json["password"])
 
         db.session.commit()
-        cache.delete(request.path)
+
+        item_url = "view/" + url_for("api.useritem", user=user_to_modify)
+        collection_url = "view/" + url_for("api.usercollection")
+
+        if cache.has(item_url):
+            cache.delete(item_url)
+        if cache.has(collection_url):
+            cache.delete(collection_url)
 
         return Response(status=200,
                         headers={"Location":
                                  url_for("api.useritem",
-                                         user_id=user_to_modify.id)})
+                                         user=user_to_modify)})
 
     @require_login
     def delete(self, user, **kwargs):
@@ -151,6 +162,13 @@ class UserItem(Resource):
 
         User.query.filter_by(id=user.id).delete()
         db.session.commit()
-        cache.delete(request.path)
+
+        item_url = "view/" + url_for("api.useritem", user=user)
+        collection_url = "view/" + url_for("api.usercollection")
+
+        if cache.has(item_url):
+            cache.delete(item_url)
+        if cache.has(collection_url):
+            cache.delete(collection_url)
 
         return 200

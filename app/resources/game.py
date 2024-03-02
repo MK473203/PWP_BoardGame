@@ -225,36 +225,26 @@ class RandomGame(Resource):
             Input: Game type in the address
             Output: Redirect to the url of chosen/created game
         """
-        if not GameType.query.filter_by(id=game_type).first():
-            return "This GameType does not exist", 409
         empty_games = Game.query.filter_by(
-            type=game_type, currentPlayer=None, result=-1).all()
-
-        for game in empty_games:
-            print(game.players)
+            type=game_type.id, currentPlayer=None, result=-1).all()
 
         user_played_games = [
             game.id for game in empty_games
             if kwargs["login_user_id"] in [user.id for user in game.players]]
 
-        print(user_played_games)
-
         query = select(GamePlayers.c.gameId, GamePlayers.c.team).where(
             GamePlayers.c.gameId.in_(user_played_games))
         game_id_and_team_list = db.session.execute(query).all()
-        print(game_id_and_team_list)
 
         available_games = []
         for game in empty_games:
             if game.id in user_played_games:
-                print("game id is in user played games" + str(game.id))
                 games_on_the_same_team = [
                     game_id for game_id, team in game_id_and_team_list
                     if team == int(game.state[0])]
                 if game.id in games_on_the_same_team:
                     available_games.append(game)
             else:
-                print("game id not in user played games" + str(game.id))
                 available_games.append(game)
 
         game_id = None
@@ -264,8 +254,8 @@ class RandomGame(Resource):
             db.session.commit()
             game_id = available_games[ind].id
         else:
-            typeobj = GameType.query.filter_by(id=game_type).first()
-            game = Game(type=game_type, state=typeobj.defaultState,
+            typeobj = GameType.query.filter_by(id=game_type.id).first()
+            game = Game(type=game_type.id, state=typeobj.defaultState,
                         currentPlayer=kwargs["login_user_id"], moveHistory=None)
             db.session.add(game)
             db.session.commit()

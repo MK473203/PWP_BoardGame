@@ -11,7 +11,7 @@ from app.utils import require_admin
 class GameTypeCollection(Resource):
     """Resource for handling game types."""
 
-    @cache.cached(timeout=None)
+    @cache.cached(timeout=0)
     def get(self):
         """
         Get a list of all game types.
@@ -48,24 +48,29 @@ class GameTypeCollection(Resource):
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
 
+        if GameType.query.filter_by(name=request.json["name"]).first():
+            return "Game type with the same name already exists", 400
+
         game_type = GameType(
             name=request.json["name"].lower(), defaultState=request.json["defaultState"])
 
         db.session.add(game_type)
         db.session.commit()
 
-        cache.delete(request.path)
+        collection_url = "view/" + url_for("api.gametypecollection")
+        if cache.has(collection_url):
+            cache.delete(collection_url)
 
         return Response(status=201,
                         headers={"Location":
                                  url_for("api.gametypeitem",
-                                         game_type_id=game_type.id)})
+                                         game_type=game_type)})
 
 
 class GameTypeItem(Resource):
     """Resource for handling getting, updating and deleting existing game type information."""
 
-    @cache.cached(timeout=None)
+    @cache.cached(timeout=0)
     def get(self, game_type):
         """Get an game type's information
             Input: game type in the address
@@ -92,6 +97,12 @@ class GameTypeItem(Resource):
 
         if "name" in request.json:
 
+            game_type_with_name = GameType.query.filter_by(
+                name=request.json["name"]).first()
+
+            if game_type_with_name and game_type_with_name.id != game_type_to_modify.id:
+                return "Game type with the same name already exists. No changes were done.", 400
+
             game_type_to_modify.name = request.json["name"].lower()
 
         if "defaultState" in request.json:
@@ -99,12 +110,19 @@ class GameTypeItem(Resource):
 
         db.session.commit()
 
-        cache.delete(request.path)
+        item_url = "view/" + \
+            url_for("api.gametypeitem", game_type=game_type_to_modify)
+        collection_url = "view/" + url_for("api.gametypecollection")
+
+        if cache.has(item_url):
+            cache.delete(item_url)
+        if cache.has(collection_url):
+            cache.delete(collection_url)
 
         return Response(status=200,
                         headers={"Location":
                                  url_for("api.gametypeitem",
-                                         game_type_id=game_type_to_modify.id)})
+                                         game_type=game_type_to_modify)})
 
     @require_admin
     def delete(self, game_type):
@@ -115,6 +133,13 @@ class GameTypeItem(Resource):
 
         GameType.query.filter_by(id=game_type.id).delete()
         db.session.commit()
-        cache.delete(request.path)
+
+        item_url = "view/" + url_for("api.gametypeitem", game_type=game_type)
+        collection_url = "view/" + url_for("api.gametypecollection")
+
+        if cache.has(item_url):
+            cache.delete(item_url)
+        if cache.has(collection_url):
+            cache.delete(collection_url)
 
         return 200
