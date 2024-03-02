@@ -41,31 +41,20 @@ def create_test_user():
         name="testuser",
         password="test123"
     )
-    
+
 
 def create_test_game():
-    game_type = GameType(name="Tictactoe", defaultState="---------")
+    game_type = GameType(name="tictactoe", defaultState="1---------")
     db.session.add(game_type)
     db.session.commit()
-    return Game(type=game_type.id)
+    return Game(type=game_type.id, state=game_type.defaultState)
 
 
-@pytest.fixture
-def sample_game_type_data():
-    return {
-        "name": "tictactoe",
-        "defaultState": "---------"
-    }
-
-
-@pytest.fixture
-def sample_game_data():
-    return {
-        "type": 1,
-        "state": "---------",
-        "result": -1
-    }
-
+def sample_game_type():
+    return GameType(
+        name="tictactoe",
+        defaultState="1---------"
+    )
 
 def test_userid(app):
     with app.app_context():
@@ -154,39 +143,19 @@ def test_delete_user(app):
         assert User.query.count() == 0
 
 
-@pytest.mark.skip(reason="Need to check how player removal from game after the move is done in code")
-def test_player_removed_after_move(app):
-    # Create User and Game
-    with app.app_context():
-        user = create_test_user()
-        game = create_test_game()
-
-        # Add User to the game
-        game.players.append(user)
-        db.session.add(game)
-        db.session.commit()
-
-        # Set current player
-        game.currentPlayer = user.id
-        db.session.commit()
-
-        # Player should be removed after making their move
-        assert user not in game.players
-
-
 # Check for game type creation and saving to database
-def test_game_type_creation(app, sample_game_type_data):
+def test_game_type_creation(app):
     with app.app_context():
-        game_type = GameType(**sample_game_type_data)
+        game_type = sample_game_type()
         db.session.add(game_type)
         db.session.commit()
         assert game_type.id is not None
 
 
 # Check for game creation and saving to database
-def test_game_creation(app, sample_game_data):
+def test_game_creation(app):
     with app.app_context():
-        game = Game(**sample_game_data)
+        game = create_test_game()
         db.session.add(game)
         db.session.commit()
         assert game.id is not None
