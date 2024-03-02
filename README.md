@@ -13,7 +13,7 @@ Database uses SQLite, version 3.40.1\
 
 ## Instructions:
 
-**(Optional) Setup a python virtual environment:**\
+**(Optional but recommended) Setup a python virtual environment:**\
 ```python -m venv <name>```
 
 - **Activate environment:**\
@@ -21,6 +21,9 @@ Database uses SQLite, version 3.40.1\
 
 **Install dependencies:**\
 ```pip install -r requirements.txt```
+
+**Install app package:**\
+```pip install -e .```
 
 **Setup an example database:**\
 ```flask populate-db```
