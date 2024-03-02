@@ -14,6 +14,7 @@ from app.models import User, Game, GameType, key_hash
 
 TEST_KEY = "verysafetestkey"
 
+
 class AuthHeaderClient(FlaskClient):
 
     def open(self, *args, **kwargs):
@@ -24,7 +25,7 @@ class AuthHeaderClient(FlaskClient):
         headers.extend(api_key_headers)
         kwargs['headers'] = headers
         return super().open(*args, **kwargs)
-    
+
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -40,18 +41,19 @@ def client():
         "SQLALCHEMY_DATABASE_URI": "sqlite:///" + db_fname,
         "TESTING": True
     }
-    
+
     app = create_app(config)
-    
+
     with app.app_context():
         db.create_all()
         _populate_db()
-        
+
     app.test_client_class = AuthHeaderClient
     yield app.test_client()
-    
+
     os.close(db_fd)
     os.unlink(db_fname)
+
 
 def _populate_db():
     for i in range(1, 4):
@@ -64,12 +66,13 @@ def _populate_db():
     db_key = key_hash(TEST_KEY)
     db.session.add(db_key)        
     db.session.commit()
-    
+
+
 def _get_user_json(number=1):
     """
     Creates a valid user JSON object to be used for PUT and POST tests.
     """
-    
+
     return {"name": "extra-user-{}".format(number), "id": "10{}".format(number)}
     
     
@@ -78,24 +81,26 @@ def _check_control_get_method(ctrl, client, obj):
     Checks a GET type control from a JSON object be it root document or an item
     in a collection. Also checks that the URL of the control can be accessed.
     """
-    
+
     href = obj["@controls"][ctrl]["href"]
     resp = client.get(href)
     assert resp.status_code == 200
-    
+
+
 def _check_control_delete_method(ctrl, client, obj):
     """
     Checks a DELETE type control from a JSON object be it root document or an
     item in a collection. Checks the contrl's method in addition to its "href".
     Also checks that using the control results in the correct status code of 204.
     """
-    
+
     href = obj["@controls"][ctrl]["href"]
     method = obj["@controls"][ctrl]["method"].lower()
     assert method == "delete"
     resp = client.delete(href)
     assert resp.status_code == 204
-    
+
+
 def _check_control_put_method(ctrl, client, obj):
     """
     Checks a PUT type control from a JSON object be it root document or an item
@@ -105,7 +110,7 @@ def _check_control_put_method(ctrl, client, obj):
     they match. Finally checks that using the control results in the correct
     status code of 204.
     """
-    
+
     ctrl_obj = obj["@controls"][ctrl]
     href = ctrl_obj["href"]
     method = ctrl_obj["method"].lower()
@@ -118,7 +123,8 @@ def _check_control_put_method(ctrl, client, obj):
     validate(body, schema)
     resp = client.put(href, json=body)
     assert resp.status_code == 204
-    
+
+
 def _check_control_post_method(ctrl, client, obj):
     """
     Checks a POST type control from a JSON object be it root document or an item
@@ -128,7 +134,7 @@ def _check_control_post_method(ctrl, client, obj):
     they match. Finally checks that using the control results in the correct
     status code of 201.
     """
-    
+
     ctrl_obj = obj["@controls"][ctrl]
     href = ctrl_obj["href"]
     method = ctrl_obj["method"].lower()
@@ -141,8 +147,9 @@ def _check_control_post_method(ctrl, client, obj):
     resp = client.post(href, json=body)
     assert resp.status_code == 201
 
+
 class TestUserCollection(object):
-    
+
     RESOURCE_URL = "/api/users/"
     VALID_USER_DATA = {
         "name": "test-user-5",
@@ -167,25 +174,27 @@ class TestUserCollection(object):
 
     def test_post(self, client):
         # test with wrong content type
-        resp = client.post(self.RESOURCE_URL, data="notjson", headers={"Content-Type": "text"})
+        resp = client.post(self.RESOURCE_URL, data="notjson",
+                           headers={"Content-Type": "text"})
         assert resp.status_code in (400, 415)
-        
+
         # test with invalid user data
         resp = client.post(self.RESOURCE_URL, json=self.INVALID_USER_DATA)
         assert resp.status_code == 400
-        
+
         # test with valid user data
         resp = client.post(self.RESOURCE_URL, json=self.VALID_USER_DATA)
         assert resp.status_code == 201
         # check if the user is created
-        assert User.query.filter_by(name=self.VALID_USER_DATA["name"]).first() is not None
+        assert User.query.filter_by(
+            name=self.VALID_USER_DATA["name"]).first() is not None
 
-   
+
 class TestUserItem(object):
-    
+
     RESOURCE_URL = "/api/users/1/"
     INVALID_URL = "/api/users/x/"
-    
+
     def test_get(self, client):
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
@@ -197,19 +206,20 @@ class TestUserItem(object):
 
     def test_put(self, client):
         valid = _get_user_json()
-        
+
         # test with wrong content type
-        resp = client.put(self.RESOURCE_URL, data="notjson", headers=Headers({"Content-Type": "text"}))
+        resp = client.put(self.RESOURCE_URL, data="notjson",
+                          headers=Headers({"Content-Type": "text"}))
         assert resp.status_code in (400, 415)
-        
+
         resp = client.put(self.INVALID_URL, json=valid)
         assert resp.status_code == 404
-        
+
         # test with another users's id
         valid["id"] = "2"
         resp = client.put(self.RESOURCE_URL, json=valid)
         assert resp.status_code == 409
-        
+
         # test with valid
         valid["id"] = "1"
         resp = client.put(self.RESOURCE_URL, json=valid)
@@ -219,7 +229,7 @@ class TestUserItem(object):
         valid.pop("name")
         resp = client.put(self.RESOURCE_URL, json=valid)
         assert resp.status_code == 400
-        
+
     def test_delete(self, client):
         resp = client.delete(self.RESOURCE_URL)
         assert resp.status_code == 204
