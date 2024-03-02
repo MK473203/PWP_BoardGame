@@ -203,16 +203,18 @@ def populate_db_command():
     db.create_all()
 
     game_type_1 = GameType(name="tictactoe", defaultState="1---------")
+    db.session.add(game_type_1)
+    db.session.commit()
 
     user1 = User(name="user1", password=key_hash("123456789"))
     user2 = User(name="user2", password=key_hash("salasana"))
     user3 = User(name="user3", password=key_hash("aaa"))
+    db.session.add_all([user1, user2, user3])
+    db.session.commit()
 
     game1 = Game(type=game_type_1.id, state=game_type_1.defaultState,
                  currentPlayer=user1.id)
 
-    db.session.add(game_type_1)
-    db.session.add_all([user1, user2, user3])
     db.session.add(game1)
 
     db.session.commit()
