@@ -11,9 +11,9 @@ from werkzeug.datastructures import Headers
 
 from app import create_app, db
 from app.models import User, Game, GameType, key_hash
+from app.utils import ADMIN_KEY
 
 TEST_KEY = "verysafetestkey"
-ADMIN_KEY = "3CK1fq9levikwyj5WxueFdtvDmNlKeiz7zK09erDXg8"
 
 
 class AuthHeaderClient(FlaskClient):
@@ -31,7 +31,7 @@ class AuthHeaderClient(FlaskClient):
 
 
 @event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
+def set_sqlite_pragma(dbapi_connection, _):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
@@ -41,7 +41,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 def client():
     db_fd, db_fname = tempfile.mkstemp()
     config = {
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///" + db_fname,
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "TESTING": True
     }
 
@@ -163,15 +163,16 @@ class TestUserCollection(object):
     INVALID_USER_DATA = {
         "name": "test-user-y"
     }
+
     def test_get(self, client):
 
         # check if the wrong api key is denied
-        #client.headers["Api-key"] = TEST_KEY
-        #resp = client.get(self.RESOURCE_URL)
-        #assert resp.status_code == 403
+        # client.headers["Api-key"] = TEST_KEY
+        # resp = client.get(self.RESOURCE_URL)
+        # assert resp.status_code == 403
 
         # check if the correct key works
-        #client.headers["Api-key"] = ADMIN_KEY
+        # client.headers["Api-key"] = ADMIN_KEY
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)

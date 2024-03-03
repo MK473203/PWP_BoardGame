@@ -5,7 +5,8 @@ from random import randint
 from flask import Response, request, url_for, redirect
 from flask_restful import Resource
 from sqlalchemy.sql import select
-from jsonschema import ValidationError, draft7_format_checker, validate
+from jsonschema import ValidationError, validate
+from jsonschema.validators import Draft7Validator
 from werkzeug.exceptions import BadRequest, Forbidden, UnsupportedMediaType
 
 from app import db
@@ -140,7 +141,7 @@ class GameItem(Resource):
 
             try:
                 validate(request.json, Game.move_schema(),
-                         format_checker=draft7_format_checker)
+                         format_checker=Draft7Validator.FORMAT_CHECKER)
             except ValidationError as e:
                 raise BadRequest(description=str(e)) from e
 
@@ -186,6 +187,12 @@ class GameItem(Resource):
             return db_game.state, 200
 
         if admin:
+
+            try:
+                validate(request.json, Game.admin_schema(),
+                         format_checker=Draft7Validator.FORMAT_CHECKER)
+            except ValidationError as e:
+                raise BadRequest(description=str(e)) from e
 
             game_to_modify = GameType.query.get(game_id)
 

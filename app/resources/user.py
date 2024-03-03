@@ -1,6 +1,7 @@
 from flask import Response, request, url_for
 from flask_restful import Resource
-from jsonschema import ValidationError, draft7_format_checker, validate
+from jsonschema import ValidationError, validate
+from jsonschema.validators import Draft7Validator
 from werkzeug.exceptions import BadRequest, Forbidden, UnsupportedMediaType
 
 from app import db, cache
@@ -42,7 +43,7 @@ class UserCollection(Resource):
 
         try:
             validate(request.json, User.json_schema(),
-                     format_checker=draft7_format_checker)
+                     format_checker=Draft7Validator.FORMAT_CHECKER)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
 

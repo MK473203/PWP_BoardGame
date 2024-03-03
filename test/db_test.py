@@ -10,7 +10,7 @@ from app.models import User, Game, GameType
 
 
 @event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
+def set_sqlite_pragma(dbapi_connection, _):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
@@ -20,7 +20,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 def app():
     db_fd, db_fname = tempfile.mkstemp()
     config = {
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///" + db_fname,
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "TESTING": True
     }
 
