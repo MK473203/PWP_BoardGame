@@ -31,5 +31,5 @@ Database uses SQLite, version 3.40.1\
 **Run the API:**\
 ```flask run```
 
-**Run tests (inside the virtual environment):**\
+**Run tests (inside the virtual environment after installing the package):**\
 ```pytest```
