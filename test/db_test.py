@@ -177,6 +177,7 @@ class TestPassword:
 
 
 class TestSchemas:
+    # GameType schema
     def test_game_type_schema(self):
         # Get the JSON schema
         schema = GameType.json_schema()
@@ -204,6 +205,7 @@ class TestSchemas:
             jsonschema.validate(instance=invalid_game_type, schema=schema)
 
 
+    # Game schemas
     def test_move_schema(self):
         # Test move schema
         schema = Game.move_schema()
