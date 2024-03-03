@@ -27,3 +27,9 @@ Database uses SQLite, version 3.40.1\
 
 **Setup an example database:**\
 ```flask populate-db```
+
+**Run the API:**\
+```flask run```
+
+**Run tests (inside the virtual environment):**\
+```pytest```
