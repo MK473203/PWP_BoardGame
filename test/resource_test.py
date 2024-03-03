@@ -163,9 +163,15 @@ class TestUserCollection(object):
     INVALID_USER_DATA = {
         "name": "test-user-y"
     }
-
     def test_get(self, client):
-        # assuming user is logged in as admin
+
+        # check if the wrong api key is denied
+        #client.headers["Api-key"] = TEST_KEY
+        #resp = client.get(self.RESOURCE_URL)
+        #assert resp.status_code == 403
+
+        # check if the correct key works
+        #client.headers["Api-key"] = ADMIN_KEY
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)

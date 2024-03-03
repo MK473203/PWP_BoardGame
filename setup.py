@@ -8,8 +8,10 @@ setup(
     zip_safe=False,
     install_requires=[
         "flask",
+      	"flask-caching",
         "flask-restful",
         "flask-sqlalchemy",
         "SQLAlchemy",
+      	"jsonschema"
     ]
 )
