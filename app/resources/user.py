@@ -38,9 +38,6 @@ class UserCollection(Resource):
             Output: Response with a header to the location of the new user
         """
 
-        if not request.json:
-            raise UnsupportedMediaType
-
         try:
             validate(request.json, User.json_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
@@ -113,9 +110,6 @@ class UserItem(Resource):
         if kwargs["login_user_id"] != user.id:
             raise Forbidden
 
-        if not request.json:
-            raise UnsupportedMediaType
-
         if "name" in request.json:
 
             user_with_name = User.query.filter_by(
@@ -161,7 +155,8 @@ class UserItem(Resource):
         if kwargs["login_user_id"] != user.id:
             raise Forbidden
 
-        User.query.filter_by(id=user.id).delete()
+        db_user = User.query.filter_by(id=user.id).first()
+        db.session.delete(db_user)
         db.session.commit()
 
         item_url = "view/" + url_for("api.useritem", user=user)

@@ -40,9 +40,6 @@ class GameTypeCollection(Resource):
             Output: Response with a header to the location of the new game type
         """
 
-        if not request.json:
-            raise UnsupportedMediaType
-
         try:
             validate(request.json, GameType.json_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
@@ -93,9 +90,6 @@ class GameTypeItem(Resource):
             Output: Response with a header to the location of the updated game type
         """
 
-        if not request.json:
-            raise UnsupportedMediaType
-
         if "name" in request.json:
 
             game_type_with_name = GameType.query.filter_by(
@@ -132,7 +126,8 @@ class GameTypeItem(Resource):
             Output: 
         """
 
-        GameType.query.filter_by(id=game_type.id).delete()
+        db_game_type = GameType.query.filter_by(id=game_type.id).first()
+        db.session.delete(db_game_type)
         db.session.commit()
 
         item_url = "view/" + url_for("api.gametypeitem", game_type=game_type)

@@ -61,9 +61,15 @@ class GameCollection(Resource):
             state = gametypeobj.defaultState
             user = request.json["user"]
             userobj = User.query.filter_by(name=user).first()
+            if userobj is not None:
+                userid = None
+            else:
+                userid = userobj.id
+
             game = Game(type=typeid, state=state,
-                        currentPlayer=userobj.id, moveHistory=None)
-            game.players = [userobj]
+                        currentPlayer=userid)
+            if userobj is not None:
+                game.players = [userobj]
             db.session.add(game)
             db.session.commit()
             return Response(status=201, headers={"location":
@@ -133,9 +139,6 @@ class GameItem(Resource):
 
         correct_user = kwargs["login_user_id"] == db_game.currentPlayer
 
-        if not request.json:
-            raise UnsupportedMediaType
-
         if correct_user:
             # Allow the current player to make a move or leave the game without making a move
 
@@ -163,9 +166,7 @@ class GameItem(Resource):
             query = GamePlayers.select().where((GamePlayers.c.gameId == db_game.id) &
                                                (GamePlayers.c.playerId == db_game.currentPlayer))
             query_result = db.session.execute(query).first()
-            print(query_result)
             if not query_result:
-                print("adding to gamePlayers")
                 ins = GamePlayers.insert().values(gameId=db_game.id,
                                                   playerId=db_game.currentPlayer,
                                                   team=int(db_game.state[0]))
@@ -184,7 +185,7 @@ class GameItem(Resource):
             db_game.result = move_result[1]
 
             db.session.commit()
-            return db_game.state, 200
+            return Response(db_game.state, 200)
 
         if admin:
 
@@ -194,7 +195,7 @@ class GameItem(Resource):
             except ValidationError as e:
                 raise BadRequest(description=str(e)) from e
 
-            game_to_modify = GameType.query.get(game_id)
+            game_to_modify = Game.query.get(game_id)
 
             if "currentPlayer" in request.json:
                 game_to_modify.currentPlayer = request.json["currentPlayer"]
@@ -205,6 +206,7 @@ class GameItem(Resource):
 
             return 200
 
+        print("ää")
         raise Forbidden
 
     @require_admin
@@ -214,10 +216,13 @@ class GameItem(Resource):
             Output:
         """
 
-        Game.query.filter_by(id=game_id).delete()
-        db.session.commit()
-
-        return 200
+        db_game = Game.query.filter_by(id=game_id).first()
+        if db_game:
+            db.session.delete(db_game)
+            db.session.commit()
+            return 200
+        else:
+            return "Specified game id not found", 404
 
 
 class RandomGame(Resource):

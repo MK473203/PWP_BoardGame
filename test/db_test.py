@@ -7,9 +7,9 @@ from sqlalchemy import event
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import BaseConverter
 
-from app import create_app, db
+from app import create_app, db, clear_cache_command
 from app.game_logic import apply_move
-from app.models import User, Game, GameType, GameTypeConverter
+from app.models import User, Game, GameType, GameTypeConverter, populate_db_command, init_db_command
 
 
 @event.listens_for(Engine, "connect")
@@ -21,7 +21,6 @@ def set_sqlite_pragma(dbapi_connection, _):
 
 @pytest.fixture
 def app():
-    db_fd, db_fname = tempfile.mkstemp()
     config = {
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "TESTING": True
@@ -33,9 +32,6 @@ def app():
         db.create_all()
 
     yield app
-
-    os.close(db_fd)
-    os.unlink(db_fname)
 
 
 def create_test_user():
@@ -72,8 +68,8 @@ class TestCreation:
             assert User.query.count() == 1
             assert Game.query.count() == 1
 
-
     # Test for game type creation and saving to database
+
     def test_game_type_creation(self, app):
         with app.app_context():
             game_type = sample_game_type()
@@ -81,8 +77,8 @@ class TestCreation:
             db.session.commit()
             assert game_type.id is not None
 
-
     # Test for game creation and saving to database
+
     def test_game_creation(self, app):
         with app.app_context():
             game = create_test_game()
@@ -108,8 +104,8 @@ class TestUser:
             # Check that the user IDs are different
             assert user1.id != user2.id
 
-
     # Test for unique username
+
     def test_unique_username(self, app):
         with app.app_context():
             # Create a test User
@@ -127,8 +123,8 @@ class TestUser:
 
             assert "IntegrityError" in str(excinfo.value)
 
-
     # Test to delete an user from the database
+
     def test_delete_user(self, app):
         # Create User in the database
         with app.app_context():
@@ -160,20 +156,20 @@ class TestPassword:
         # Test a valid password
         assert User.validate_password("Password123") is None
 
-
     def test_short_password(self):
         # Test a password that is too short
-        assert User.validate_password("ab") == ("Password must have 3-64 characters.", 400)
-
+        assert User.validate_password("ab") == (
+            "Password must have 3-64 characters.", 400)
 
     def test_long_password(self):
         # Test a password that is too long
-        assert User.validate_password("a" * 65) == ("Password must have 3-64 characters.", 400)
-
+        assert User.validate_password(
+            "a" * 65) == ("Password must have 3-64 characters.", 400)
 
     def test_password_without_number(self):
         # Test a password without any number
-        assert User.validate_password("Password") == ("Password must include at least one number.", 400)
+        assert User.validate_password("Password") == (
+            "Password must include at least one number.", 400)
 
 
 class TestSchemas:
@@ -204,8 +200,8 @@ class TestSchemas:
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(instance=invalid_game_type, schema=schema)
 
-
     # Game schemas
+
     def test_move_schema(self):
         # Test move schema
         schema = Game.move_schema()
@@ -217,7 +213,6 @@ class TestSchemas:
             }
         }
 
-
     def test_admin_schema(self, app):
         # Test admin schema
         with app.app_context():
@@ -228,6 +223,7 @@ class TestSchemas:
             schema = Game.admin_schema()
             assert schema == {
                 "type": "object",
+                "anyOf": [{"required": ["currentPlayer"]}],
                 "properties": {
                     "currentPlayer": {
                         "type": "integer",
@@ -246,20 +242,18 @@ class TestGameTypeConverter:
             game_type = GameType(name=game_type_name)
             db.session.add(game_type)
             db.session.commit()
-            
+
             result = converter.to_python(game_type_name)
             assert result == game_type
-
 
     def test_to_python_nonexistent_game_type(self, app):
         with app.app_context():
             # Test converting a nonexistent game type name
             converter = GameTypeConverter(BaseConverter)
             game_type_name = "NonexistentGameType"
-            
+
             with pytest.raises(NotFound):
                 converter.to_python(game_type_name)
-
 
     def test_to_url(self, app):
         with app.app_context():
@@ -267,7 +261,7 @@ class TestGameTypeConverter:
             converter = GameTypeConverter(BaseConverter)
             game_type_name = "ExampleGameType"
             game_type = GameType(name=game_type_name)
-            
+
             result = converter.to_url(game_type)
             assert result == game_type_name
 
@@ -311,7 +305,6 @@ class TestTictactoe:
             # Check that game doesn't end
             assert game_result == -1
 
-
     def test_invalid_move_tictactoe(self, app):
         with app.app_context():
 
@@ -326,7 +319,6 @@ class TestTictactoe:
             # Check that outcome of apply_move() should be None (Invalid move)
             assert result is None
 
-
     def test_gamewinning_move_tictactoe(self, app):
         with app.app_context():
 
@@ -340,7 +332,6 @@ class TestTictactoe:
 
             # Check that move_result (result = 1 or 2) is game winning one
             assert move_result in [1, 2]
-
 
     def test_game_draw_tictactoe(self, app):
         with app.app_context():
@@ -367,3 +358,14 @@ class TestCheckers:
 
     def test_gamewinning_move_checkers(self, app):
         pass
+
+
+def test_cli(app):
+    runner = app.test_cli_runner()
+
+    result = runner.invoke(init_db_command)
+    assert result.output == ""
+    result = runner.invoke(populate_db_command)
+    assert result.output == ""
+    result = runner.invoke(clear_cache_command)
+    assert result.output == ""

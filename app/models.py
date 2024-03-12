@@ -17,9 +17,9 @@ def key_hash(key):
 
 GamePlayers = db.Table("GamePlayers",
                        db.Column("gameId", db.Integer, db.ForeignKey(
-                           "Game.id", ondelete="SET NULL"), primary_key=True),
+                           "Game.id", ondelete="CASCADE"), primary_key=True),
                        db.Column("playerId", db.Integer, db.ForeignKey(
-                           "User.id", ondelete="SET NULL"), primary_key=True),
+                           "User.id", ondelete="CASCADE"), primary_key=True),
                        db.Column("team", db.Integer)
                        )
 
@@ -161,18 +161,18 @@ class Game(db.Model):
     def admin_schema():
         """JSON schema for making admin privileged modifications"""
         schema = {
-            "type": "object"
+            "type": "object",
+            "anyOf": [{"required": ["currentPlayer"]}]
         }
         props = schema["properties"] = {}
         props["currentPlayer"] = {
             "type": "integer",
-            "enum": [id for id in db.session.query(User.id).all()] + [None]
+            "enum": [row[0] for row in db.session.query(User.id).all()] + [None]
         }
         return schema
 
 
 @click.command("init-db")
-@with_appcontext
 def init_db_command():
     """
     Initializes an empty database file.
@@ -180,7 +180,7 @@ def init_db_command():
     Usage: flask init-db
     """
 
-    if os.path.isfile(os.path.join(current_app.instance_path, "dev.db")):
+    if os.path.isfile(current_app.config["SQLALCHEMY_DATABASE_URI"][10:]):
         print("A .db file already exists. Delete it to use this command.")
         return
 
@@ -188,7 +188,6 @@ def init_db_command():
 
 
 @click.command("populate-db")
-@with_appcontext
 def populate_db_command():
     """
     Initializes a small example database.
@@ -196,7 +195,7 @@ def populate_db_command():
     Usage: flask populate-db
     """
 
-    if os.path.isfile(os.path.join(current_app.instance_path, "dev.db")):
+    if os.path.isfile(current_app.config["SQLALCHEMY_DATABASE_URI"][10:]):
         print("A .db file already exists. Delete it to use this command.")
         return
 
@@ -207,8 +206,8 @@ def populate_db_command():
     db.session.commit()
 
     user1 = User(name="user1", password=key_hash("123456789"))
-    user2 = User(name="user2", password=key_hash("salasana"))
-    user3 = User(name="user3", password=key_hash("aaa"))
+    user2 = User(name="user2", password=key_hash("salasana1"))
+    user3 = User(name="user3", password=key_hash("aaa123"))
     db.session.add_all([user1, user2, user3])
     db.session.commit()
 

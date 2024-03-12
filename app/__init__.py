@@ -11,7 +11,6 @@ cache = Cache()
 
 
 @click.command("clear-cache")
-@with_appcontext
 def clear_cache_command():
     """
     Clears the cache
