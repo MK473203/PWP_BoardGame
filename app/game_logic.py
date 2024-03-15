@@ -22,8 +22,8 @@ Use included apply_move() function to play a move on a specific board.
 #  black team starts at the bottom, white at the top
 #  all marks always move diagonally, can jump over 1 enemy mark to destroy it
 #  marks only move forward, while king marks can also move backwards
-#  destroying enemy mark can be done backwards by all marks
-#  a mark that reaches the opposite row becomes king
+#  destroying enemy mark can also be done backwards by all marks
+#  a mark that reaches the opposite row becomes a king
 #  mark of team 1 = "b", "B" for king
 #  mark of team 2 = "w", "W" for king
 #  game type = "checkers"
@@ -31,14 +31,14 @@ Use included apply_move() function to play a move on a specific board.
 #  move = tuple like (1, 2), where a mark is moved from index 1 to index 2.
 
 
-def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple[str, bool] | None:
+def apply_move(move: int | list[tuple], state: str, game_type: str) -> tuple[str, bool] | None:
     """ Applies a move to a board state.
 
     Returns None if an argument is invalid.
 
     Arguments:
     - move (int or list of tuples): Move(s) to play
-    - old_state (str): Board state to apply the move to
+    - state (str): Board state to apply the move to
     - game_type (str): Which game is being played
 
     Returns 2 values as a tuple (unless move is invalid):
@@ -49,23 +49,26 @@ def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple
        * 1 == Team 1 won
        * 2 == Team 2 won
     """
-    team = int(old_state[0])
-    new_state = old_state[1:]
+    # Extract current team from state
+    team = int(state[0])
+    state = state[1:]
 
     # Play the move
     if game_type == "tictactoe":
-        if not (isinstance(move, int) and is_valid_move(move, team, new_state, game_type)):
+        if not isinstance(move, int) or not is_valid_move(move, team, state, game_type):
             return None
         next_mark = "X" if (team == 1) else "O"
-        new_state = string_insert(new_state, move, next_mark)
+        state = string_insert(state, move, next_mark)
     elif game_type == "checkers":
-        if not (isinstance(move, list) and all(isinstance(m, tuple) for m in move)):
+        if not isinstance(move, list) or not all(isinstance(m, tuple) for m in move):
             return None
         prev_move_to = 0
         for m_index, m in enumerate(move):
-            if not is_valid_move(m, team, new_state, game_type):
+            if not is_valid_move(m, team, state, game_type):
                 if m_index == 0:
+                    # First move in jump chain is invalid, prevent whole move
                     return None
+                # First move in jump chain was valid, play the jumps until first invalid jump
                 break
 
             # Get indexes from move tuple
@@ -80,43 +83,39 @@ def apply_move(move: int | list[tuple], old_state: str, game_type: str) -> tuple
 
             # If jumped over a mark, remove it
             if middle % 1 == 0:
-                new_state = string_insert(new_state, int(middle), "-")
+                state = string_insert(state, int(middle), "-")
 
-            # Move mark to new position, converting it to king if
-            #  it reached the opponents side of the board
-            mark = new_state[move_from]
+            # Move mark to new position
+            mark = state[move_from]
             if move_to // 8 == (0 if (team == 1) else 7):
-                new_state = string_insert(new_state, move_to, mark.upper())
+                # Mark reached opponent's first row, make it a king
+                state = string_insert(state, move_to, mark.upper())
             else:
-                new_state = string_insert(new_state, move_to, mark)
-            new_state = string_insert(new_state, move_from, "-")
+                state = string_insert(state, move_to, mark)
+            state = string_insert(state, move_from, "-")
 
     # Check win conditions
-    win_state = get_winner(new_state, team, game_type)
+    win_state = get_winner(state, team, game_type)
 
     # Add next team to state
     next_team = 2 if (team == 1) else 1
-    new_state = str(next_team) + new_state
+    state = str(next_team) + state
 
-    return new_state, win_state
+    return state, win_state
 
 # Helper functions for local use
 # State string update
-
-
 def string_insert(string: str, index: int, replacement: str):
     """ Replaces character at string[index] with given replacement string. """
     return string[:index] + replacement + string[index + 1:]
 
 # Move validation
-
-
 def is_valid_move(move: int | tuple, team: int, state: str, game_type: str) -> bool:
     """
     Returns True if move is valid, otherwise returns False.
     """
     try:
-        if game_type == "tictactoe" and state[move] == "-":
+        if game_type == "tictactoe" and 0 <= move <= 8 and state[move] == "-":
             return True
         if game_type == "checkers":
             move_from = int(move[0])
@@ -159,12 +158,11 @@ def is_valid_move(move: int | tuple, team: int, state: str, game_type: str) -> b
         pass
     return False
 
-
 # Win condition checker
-tictactoe_winning_lines = [(0, 1, 2), (3, 4, 5), (6, 7, 8),
-                           (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)]
-
-
+tictactoe_winning_lines = [
+    (0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6),
+    (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)
+]
 def get_winner(state: str, team, game_type: str) -> int:
     """
     Returns game conclusion state:
@@ -180,7 +178,8 @@ def get_winner(state: str, team, game_type: str) -> int:
 
             # Check if one team has filled the row
             if marks[0] == marks[1] == marks[2] != "-":
-                return 1 if (marks[0] == "X") else 2
+                result = 1 if (marks[0] == "X") else 2
+                break
 
             # Check if the row could still be filled by only "X" or only "O"
             if not ("X" in marks and "O" in marks):
@@ -208,8 +207,6 @@ def get_winner(state: str, team, game_type: str) -> int:
     return 0
 
 # Checkers valid moves analysis
-
-
 def checkers_move_exists(team: int, state: str) -> bool:
     """
     Check if given team can play a valid move.
@@ -220,7 +217,8 @@ def checkers_move_exists(team: int, state: str) -> bool:
     moves = [-18, 18, -14, 14, -9, 9, -7, 7]
 
     # Gather indexes of given team's marks
-    indexes = list(tup[0] for tup in enumerate(state) if tup[1] == friend_mark)
+    indexes = list(board_pos[0] for board_pos in enumerate(state)
+                   if board_pos[1].lower() == friend_mark)
 
     for index in indexes:
         # Check if any move is possible for mark at current index
