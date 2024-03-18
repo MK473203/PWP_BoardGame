@@ -75,13 +75,10 @@ class UserItem(Resource):
     @require_login
     @cache.cached(timeout=300)
     def get(self, user, **kwargs):
-        """Get an user's information. Requires user authentication
+        """Get an user's information. Requires an user to be logged in.
             Input: User id in the address
             Output: Dictionary of all relevant information on the specified user
         """
-
-        if kwargs["login_user_id"] != user.id:
-            raise Forbidden
 
         game_list = []
 
