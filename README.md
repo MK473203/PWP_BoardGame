@@ -33,3 +33,6 @@ Database uses SQLite, version 3.40.1\
 
 **Run tests (inside the virtual environment after installing the package):**\
 ```pytest```
+
+**Test coverage:**\
+```pytest --cov-report term-missing --cov=app```
