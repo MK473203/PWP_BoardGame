@@ -27,27 +27,27 @@ GamePlayers = db.Table("GamePlayers",
 class GameTypeConverter(BaseConverter):
     """Class for converting game type names to python objects and vice versa"""
 
-    def to_python(self, game_type_name):
-        db_game_type = GameType.query.filter_by(name=game_type_name).first()
+    def to_python(self, value):
+        db_game_type = GameType.query.filter_by(name=value).first()
         if db_game_type is None:
             raise NotFound
         return db_game_type
 
-    def to_url(self, db_game_type):
-        return db_game_type.name
+    def to_url(self, value):
+        return value.name
 
 
 class UserConverter(BaseConverter):
     """Class for converting user names to python objects and vice versa"""
 
-    def to_python(self, user_name):
-        db_user = User.query.filter_by(name=user_name).first()
+    def to_python(self, value):
+        db_user = User.query.filter_by(name=value).first()
         if db_user is None:
             raise NotFound
         return db_user
 
-    def to_url(self, db_user):
-        return db_user.name
+    def to_url(self, value):
+        return value.name
 
 
 class GameType(db.Model):
