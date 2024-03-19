@@ -2,21 +2,22 @@
 Flask resources for interacting with user information
 """
 
+import json
 from flask import Response, request, url_for
 from flask_restful import Resource
 from jsonschema import ValidationError, validate
 from jsonschema.validators import Draft7Validator
-from werkzeug.exceptions import BadRequest, Forbidden, UnsupportedMediaType
+from werkzeug.exceptions import BadRequest, Forbidden
 
 from app import db, cache
 from app.models import User
-from app.utils import key_hash, require_admin, require_login
+from app.utils import key_hash, require_login, BoardGameBuilder, MASON
 
 
 class UserCollection(Resource):
     """Resource for handling user creation. Admins can also get a list of all users."""
 
-    @require_admin
+    #TODO: Add varying return values for admin / user with account / user without account
     @cache.cached(timeout=900)
     def get(self):
         """
@@ -30,11 +31,17 @@ class UserCollection(Resource):
         users = User.query.all()
 
         for user in users:
-            user_dict = {"id": user.id,
-                         "name": user.name}
-            user_list.append(user_dict)
+            user_obj = BoardGameBuilder(id=user.id, name=user.name)
+            user_obj.add_control("self", url_for("api.useritem", user=user))
+            user_list.append(user_obj)
 
-        return user_list, 200
+        body = BoardGameBuilder(items=user_list)
+        body.add_board_game_namespace()
+        body.add_control_all_game_types()
+        body.add_control_all_games()
+        body.add_control_add_user()
+
+        return Response(json.dumps(body), 200, mimetype=MASON)
 
     def post(self):
         """Create a new user
@@ -83,31 +90,36 @@ class UserItem(Resource):
     @cache.cached(timeout=300)
     def get(self, user, **kwargs):
         """Get an user's information. Requires an user to be logged in.
-            Input: User id in the address
+            Input: Username
             Output: Dictionary of all relevant information on the specified user
         """
 
+        if kwargs["login_user_id"] != user.id:
+            raise Forbidden
+
         game_list = []
-
         for game in user.games:
-            game_list.append({"id": game.id,
-                              "type": game.type,
-                              "result": game.result})
+            game_obj = BoardGameBuilder(id=game.id, type=game.type, result=game.result)
+            game_obj.add_control("self", url_for("api.gameitem", game_id=game.id))
+            game_list.append(game_obj)
 
-        user_dict = {
-            "id": user.id,
-            "name": user.name,
-            "turnsPlayed": user.turnsPlayed,
-            "totalTime": user.totalTime,
-            "games": game_list
-        }
+        body = BoardGameBuilder(
+            id=user.id,
+            name=user.name,
+            turnsPlayed=user.turnsPlayed,
+            totalTime=user.totalTime,
+            games=game_list
+        )
+        body.add_control_all_users()
+        body.add_control_delete_user(user)
+        body.add_control_edit_user(user)
 
-        return user_dict, 200
+        return Response(json.dumps(body), 200, mimetype=MASON)
 
     @require_login
     def put(self, user, **kwargs):
         """Update user information. Requires user authentication
-            Input: User id in the address and json with the fields 'name' and/or 'password'
+            Input: Username and json with the fields 'name' and/or 'password'
             Output: Response with a header to the location of the updated user
         """
 
@@ -116,8 +128,7 @@ class UserItem(Resource):
 
         if "name" in request.json:
 
-            user_with_name = User.query.filter_by(
-                name=request.json["name"]).first()
+            user_with_name = User.query.filter_by(name=request.json["name"]).first()
 
             if user_with_name and user_with_name.id != user.id:
                 return "User with the same name already exists. No changes were done.", 400
@@ -144,15 +155,12 @@ class UserItem(Resource):
         if cache.has(collection_url):
             cache.delete(collection_url)
 
-        return Response(status=200,
-                        headers={"Location":
-                                 url_for("api.useritem",
-                                         user=user)})
+        return Response(status=200, headers={"Location": url_for("api.useritem", user=user)})
 
     @require_login
     def delete(self, user, **kwargs):
         """Delete an user. Requires user authentication
-            Input: User id in the address
+            Input: Username
             Output: 
         """
 
