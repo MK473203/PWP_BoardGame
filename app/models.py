@@ -1,27 +1,24 @@
-import hashlib
+"""
+SQLAlchemy models
+"""
+
 import os
 
 import click
 from flask import current_app
-from flask.cli import with_appcontext
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import BaseConverter
 
 from app import db
-
-
-def key_hash(key):
-    """Used for api key and user password hashing"""
-    return hashlib.sha256(key.encode()).digest()
-
+from app.utils import key_hash
 
 GamePlayers = db.Table("GamePlayers",
-                       db.Column("gameId", db.Integer, db.ForeignKey(
-                           "Game.id", ondelete="CASCADE"), primary_key=True),
-                       db.Column("playerId", db.Integer, db.ForeignKey(
-                           "User.id", ondelete="CASCADE"), primary_key=True),
-                       db.Column("team", db.Integer)
-                       )
+    db.Column("gameId", db.Integer,
+              db.ForeignKey("Game.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("playerId", db.Integer,
+              db.ForeignKey("User.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("team", db.Integer)
+)
 
 
 class GameTypeConverter(BaseConverter):
