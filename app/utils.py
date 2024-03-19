@@ -3,10 +3,18 @@ import secrets
 from flask import request
 from werkzeug.exceptions import Forbidden
 
-from app.models import User, key_hash
+from app.models import User, Game, GameType, key_hash
+from app.api import api
+
+from app.resources.game import GameCollection, GameItem, RandomGame
+from app.resources.game_type import GameTypeCollection, GameTypeItem
+from app.resources.user import UserCollection, UserItem
 
 ADMIN_KEY = "3CK1fq9levikwyj5WxueFdtvDmNlKeiz7zK09erDXg8"
 ADMIN_KEY_HASH = key_hash(ADMIN_KEY)
+
+MASON = "application/vnd.mason+json"
+LINK_RELATIONS = "/boardgame/"
 
 
 def require_login(func):
@@ -15,6 +23,7 @@ def require_login(func):
 
     DOES NOT CHECK WHICH USER IT IS. 
     The user's username and id are supplied to the wrapped function in kwargs.
+    These can then be used to do further identification.
     """
 
     def wrapper(*args, **kwargs):
@@ -44,3 +53,125 @@ def require_admin(func):
             return func(*args, **kwargs)
         raise Forbidden
     return wrapper
+
+
+class BoardGameBuilder(dict):
+
+    """
+    Taken from:
+    https://github.com/enkwolf/pwp-course-sensorhub-api-example/blob/master/sensorhub/utils.py
+
+    A convenience class for managing dictionaries that represent Mason
+    objects. It provides nice shorthands for inserting some of the more
+    elements into the object and ready-made functions for adding boardgame controls.
+    """
+
+    def add_error(self, title, details):
+        """
+        Adds an error element to the object. Should only be used for the root
+        object, and only in error scenarios.
+
+        Note: Mason allows more than one string in the @messages property (it's
+        in fact an array). However we are being lazy and supporting just one
+        message.
+
+        : param str title: Short title for the error
+        : param str details: Longer human-readable description
+        """
+
+        self["@error"] = {
+            "@message": title,
+            "@messages": [details],
+        }
+
+    def add_namespace(self, ns, uri):
+        """
+        Adds a namespace element to the object. A namespace defines where our
+        link relations are coming from. The URI can be an address where
+        developers can find information about our link relations.
+
+        : param str ns: the namespace prefix
+        : param str uri: the identifier URI of the namespace
+        """
+
+        if "@namespaces" not in self:
+            self["@namespaces"] = {}
+
+        self["@namespaces"][ns] = {
+            "name": uri
+        }
+
+    def add_control(self, ctrl_name, href, **kwargs):
+        """
+        Adds a control property to an object. Also adds the @controls property
+        if it doesn't exist on the object yet. Technically only certain
+        properties are allowed for kwargs but again we're being lazy and don't
+        perform any checking.
+
+        The allowed properties can be found from here
+        https://github.com/JornWildt/Mason/blob/master/Documentation/Mason-draft-2.md
+
+        : param str ctrl_name: name of the control (including namespace if any)
+        : param str href: target URI for the control
+        """
+
+        if "@controls" not in self:
+            self["@controls"] = {}
+
+        self["@controls"][ctrl_name] = kwargs
+        self["@controls"][ctrl_name]["href"] = href
+
+    def add_board_game_namespace(self):
+        self.add_namespace("boardgame", LINK_RELATIONS)
+
+    def add_control_all_games(self):
+        self.add_control("boardgame:games-all",
+                         api.url_for(GameCollection), method="GET")
+
+    def add_control_all_users(self):
+        self.add_control("boardgame:users-all",
+                         api.url_for(UserCollection), method="GET")
+
+    def add_control_all_game_types(self):
+        self.add_control("boardgame:gametypes-all",
+                         api.url_for(GameTypeCollection), method="GET")
+
+    def add_control_add_game(self):
+        self.add_control("boardgame:add-game",
+                         api.url_for(GameCollection), method="POST", encoding="json", schema=Game.json_schema())
+
+    def add_control_add_user(self):
+        self.add_control("boardgame:add-user",
+                         api.url_for(UserCollection), method="POST", encoding="json", schema=User.json_schema())
+
+    def add_control_add_game_type(self):
+        self.add_control("boardgame:add-gametype",
+                         api.url_for(GameTypeCollection), method="POST", encoding="json", schema=User.json_schema())
+
+    def add_control_delete_game(self, game_id):
+        self.add_control("boardgame:delete",
+                         api.url_for(GameItem, game_id=game_id), method="DELETE")
+
+    def add_control_delete_user(self, user):
+        self.add_control("boardgame:delete",
+                         api.url_for(UserItem, user=user), method="DELETE")
+
+    def add_control_delete_game_type(self, game_type):
+        self.add_control("boardgame:delete",
+                         api.url_for(GameTypeItem, game_type=game_type), method="DELETE")
+
+    def add_control_edit_game(self, game_id):
+        self.add_control("edit",
+                         api.url_for(GameItem, game_id=game_id), method="PUT", encoding="json", schema=Game.admin_schema())
+
+    def add_control_edit_user(self, user):
+        self.add_control("edit",
+                         api.url_for(UserItem, user=user), method="PUT", encoding="json")
+
+    def add_control_edit_game_type(self, game_type):
+        self.add_control("edit",
+                         api.url_for(GameTypeItem, game_type=game_type), method="PUT", encoding="json")
+
+    def add_control_make_move(self, game_id):
+        self.add_control("boardgame:make-move",
+                         api.url_for(GameItem, game_id=game_id), method="PUT", encoding="json", schema=Game.move_schema())

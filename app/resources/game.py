@@ -1,3 +1,8 @@
+"""
+Flask resources for interacting with game instances.
+Also allows users to join a random game instance of a wanted game type.
+"""
+
 import secrets
 import pickle
 from random import randint
@@ -7,7 +12,7 @@ from flask_restful import Resource
 from sqlalchemy.sql import select
 from jsonschema import ValidationError, validate
 from jsonschema.validators import Draft7Validator
-from werkzeug.exceptions import BadRequest, Forbidden, UnsupportedMediaType
+from werkzeug.exceptions import BadRequest, Forbidden
 
 from app import db
 from app.game_logic import apply_move
@@ -51,6 +56,12 @@ class GameCollection(Resource):
         try:
             if not request.is_json:
                 return "Request content type must be JSON", 415
+
+            try:
+                validate(request.json, Game.json_schema(),
+                         format_checker=Draft7Validator.FORMAT_CHECKER)
+            except ValidationError as e:
+                raise BadRequest(description=str(e)) from e
 
             gametype = request.json["type"]
             if not GameType.query.filter_by(name=gametype).first():

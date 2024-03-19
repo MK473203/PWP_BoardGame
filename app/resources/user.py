@@ -1,3 +1,7 @@
+"""
+Flask resources for interacting with user information
+"""
+
 from flask import Response, request, url_for
 from flask_restful import Resource
 from jsonschema import ValidationError, validate
@@ -46,6 +50,9 @@ class UserCollection(Resource):
 
         if User.query.filter_by(name=request.json["name"]).first():
             return "User with the same name already exists", 400
+
+        if len(request.json["name"]) < 3:
+            return "Username should be at least 3 characters long", 400
 
         validation_result = User.validate_password(
             request.json["password"])

@@ -145,6 +145,22 @@ class Game(db.Model):
         "User", secondary=GamePlayers, back_populates="games")
 
     @staticmethod
+    def json_schema():
+        """JSON schema for creating a game instance"""
+        schema = {
+            "type": "object",
+            "required": ["type", "user"]
+        }
+        props = schema["properties"] = {}
+        props["type"] = {
+            "type": "string"
+        }
+        props["user"] = {
+            "type": "string"
+        }
+        return schema
+
+    @staticmethod
     def move_schema():
         """JSON schema for making a move in a game"""
         schema = {
