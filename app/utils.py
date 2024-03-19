@@ -1,3 +1,7 @@
+"""
+Utilities and helpers
+"""
+
 import secrets
 
 from flask import request
@@ -7,7 +11,6 @@ from app.models import User, key_hash
 
 ADMIN_KEY = "3CK1fq9levikwyj5WxueFdtvDmNlKeiz7zK09erDXg8"
 ADMIN_KEY_HASH = key_hash(ADMIN_KEY)
-
 
 def require_login(func):
     """

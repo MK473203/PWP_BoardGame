@@ -1,10 +1,14 @@
+"""
+Flask resources for interacting with game types
+"""
+
 from flask import Response, request, url_for
 from flask_restful import Resource
 from jsonschema import ValidationError, validate
 from jsonschema.validators import Draft7Validator
-from werkzeug.exceptions import BadRequest, UnsupportedMediaType
+from werkzeug.exceptions import BadRequest
 
-from app import db, cache
+from app import db, cache, delete_cache_entry
 from app.models import GameType
 from app.utils import require_admin
 
@@ -41,7 +45,7 @@ class GameTypeCollection(Resource):
         """
 
         try:
-            validate(request.json, GameType.json_schema(),
+            validate(request.json, GameType.post_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
@@ -55,9 +59,7 @@ class GameTypeCollection(Resource):
         db.session.add(game_type)
         db.session.commit()
 
-        collection_url = "view/" + url_for("api.gametypecollection")
-        if cache.has(collection_url):
-            cache.delete(collection_url)
+        delete_cache_entry(url_for("api.gametypecollection"))
 
         return Response(status=201,
                         headers={"Location":
@@ -90,6 +92,12 @@ class GameTypeItem(Resource):
             Output: Response with a header to the location of the updated game type
         """
 
+        try:
+            validate(request.json, GameType.put_schema(),
+                     format_checker=Draft7Validator.FORMAT_CHECKER)
+        except ValidationError as e:
+            raise BadRequest(description=str(e)) from e
+
         if "name" in request.json:
 
             game_type_with_name = GameType.query.filter_by(
@@ -105,14 +113,8 @@ class GameTypeItem(Resource):
 
         db.session.commit()
 
-        item_url = "view/" + \
-            url_for("api.gametypeitem", game_type=game_type)
-        collection_url = "view/" + url_for("api.gametypecollection")
-
-        if cache.has(item_url):
-            cache.delete(item_url)
-        if cache.has(collection_url):
-            cache.delete(collection_url)
+        delete_cache_entry(url_for("api.gametypecollection"))
+        delete_cache_entry(url_for("api.gametypeitem", game_type=game_type))
 
         return Response(status=200,
                         headers={"Location":
@@ -130,12 +132,7 @@ class GameTypeItem(Resource):
         db.session.delete(db_game_type)
         db.session.commit()
 
-        item_url = "view/" + url_for("api.gametypeitem", game_type=game_type)
-        collection_url = "view/" + url_for("api.gametypecollection")
-
-        if cache.has(item_url):
-            cache.delete(item_url)
-        if cache.has(collection_url):
-            cache.delete(collection_url)
+        delete_cache_entry(url_for("api.gametypecollection"))
+        delete_cache_entry(url_for("api.gametypeitem", game_type=game_type))
 
         return 200

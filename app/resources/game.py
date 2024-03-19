@@ -1,3 +1,8 @@
+"""
+Flask resources for interacting with game instances.
+Also allows users to join a random game instance of a wanted game type.
+"""
+
 import secrets
 import pickle
 from random import randint
@@ -7,7 +12,7 @@ from flask_restful import Resource
 from sqlalchemy.sql import select
 from jsonschema import ValidationError, validate
 from jsonschema.validators import Draft7Validator
-from werkzeug.exceptions import BadRequest, Forbidden, UnsupportedMediaType
+from werkzeug.exceptions import BadRequest, Forbidden
 
 from app import db
 from app.game_logic import apply_move
@@ -48,34 +53,38 @@ class GameCollection(Resource):
             Input: Json with the fields 'type' and 'user'
             Output: A Response with a header to the url of the created game
         """
+        if not request.is_json:
+            return "Request content type must be JSON", 415
+
         try:
-            if not request.is_json:
-                return "Request content type must be JSON", 415
+            validate(request.json, Game.post_schema(),
+                     format_checker=Draft7Validator.FORMAT_CHECKER)
+        except ValidationError as e:
+            raise BadRequest(description=str(e)) from e
 
-            gametype = request.json["type"]
-            if not GameType.query.filter_by(name=gametype).first():
-                return "This GameType does not exist", 409
-            else:
-                gametypeobj = GameType.query.filter_by(name=gametype).first()
-            typeid = gametypeobj.id
-            state = gametypeobj.defaultState
-            user = request.json["user"]
-            userobj = User.query.filter_by(name=user).first()
-            if userobj is not None:
-                userid = None
-            else:
-                userid = userobj.id
+        gametype = request.json["type"]
+        if not GameType.query.filter_by(name=gametype).first():
+            return "This GameType does not exist", 409
+        else:
+            gametypeobj = GameType.query.filter_by(name=gametype).first()
+        typeid = gametypeobj.id
+        state = gametypeobj.defaultState
+        user = request.json["user"]
+        userobj = User.query.filter_by(name=user).first()
+        if userobj is not None:
+            userid = None
+        else:
+            userid = userobj.id
 
-            game = Game(type=typeid, state=state,
-                        currentPlayer=userid)
-            if userobj is not None:
-                game.players = [userobj]
-            db.session.add(game)
-            db.session.commit()
-            return Response(status=201, headers={"location":
-                                                 url_for("api.gameitem", game_id=game.id)})
-        except KeyError:
-            return "Incomplete request - missing fields", 400
+        game = Game(type=typeid, state=state,
+                    currentPlayer=userid)
+        if userobj is not None:
+            game.players = [userobj]
+        db.session.add(game)
+        db.session.commit()
+
+        return Response(status=201, headers={"location":
+                                             url_for("api.gameitem", game_id=game.id)})
 
 
 class GameItem(Resource):
@@ -171,6 +180,12 @@ class GameItem(Resource):
                                                   playerId=db_game.currentPlayer,
                                                   team=int(db_game.state[0]))
                 db.session.execute(ins)
+            else:
+                update = GamePlayers.update()\
+                                    .where((GamePlayers.c.gameId == db_game.id) &
+                                           (GamePlayers.c.playerId == db_game.currentPlayer))\
+                                    .values(team=int(db_game.state[0]))
+                db.session.execute(update)
 
             move_history_list = []
 
@@ -185,7 +200,7 @@ class GameItem(Resource):
             db_game.result = move_result[1]
 
             db.session.commit()
-            return Response(db_game.state, 200)
+            return Response(db_game.state + " result:" + str(move_result[1]), 200)
 
         if admin:
 
@@ -199,6 +214,10 @@ class GameItem(Resource):
 
             if "currentPlayer" in request.json:
                 game_to_modify.currentPlayer = request.json["currentPlayer"]
+                insert = GamePlayers.insert().values(gameId=game_to_modify.id,
+                                                     playerId=request.json["currentPlayer"],
+                                                     team=None)
+                db.session.execute(insert)
 
             # More options can be added if needed
 
@@ -259,16 +278,23 @@ class RandomGame(Resource):
             else:
                 available_games.append(game)
 
+        user = User.query.get(kwargs["login_user_id"])
         game_id = None
         if available_games:
             ind = randint(0, len(available_games) - 1)
             available_games[ind].currentPlayer = kwargs["login_user_id"]
+            if kwargs["login_user_id"] not in [user.id for user in available_games[ind].players]:
+                available_games[ind].players += [user]
             db.session.commit()
+
             game_id = available_games[ind].id
         else:
             typeobj = GameType.query.filter_by(id=game_type.id).first()
-            game = Game(type=game_type.id, state=typeobj.defaultState,
-                        currentPlayer=kwargs["login_user_id"], moveHistory=None)
+            game = Game(type=game_type.id,
+                        state=typeobj.defaultState,
+                        currentPlayer=kwargs["login_user_id"],
+                        moveHistory=None,
+                        players=[user])
             db.session.add(game)
             db.session.commit()
             game_id = game.id

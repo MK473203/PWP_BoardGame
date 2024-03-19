@@ -2,7 +2,6 @@ import os
 
 import click
 from flask import Flask
-from flask.cli import with_appcontext
 from flask_caching import Cache
 from flask_sqlalchemy import SQLAlchemy
 
@@ -18,6 +17,12 @@ def clear_cache_command():
     Usage: flask clear-cache
     """
     cache.clear()
+
+
+def delete_cache_entry(url):
+    url = "view/" + url
+    if cache.has(url):
+        cache.delete(url)
 
 
 def create_app(test_config=None):

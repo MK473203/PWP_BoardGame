@@ -31,7 +31,7 @@ Use included apply_move() function to play a move on a specific board.
 #  move = tuple like (1, 2), where a mark is moved from index 1 to index 2.
 
 
-def apply_move(move: int | list[tuple], state: str, game_type: str) -> tuple[str, bool] | None:
+def apply_move(move: int | list[tuple], state: str, game_type: str) -> tuple[str, int] | None:
     """ Applies a move to a board state.
 
     Returns None if an argument is invalid.
