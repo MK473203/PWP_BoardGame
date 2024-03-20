@@ -51,6 +51,7 @@ Additionally, Mika identified several issues in the database design and implemen
 - Put method requests should always include all relevant information. No optional fields.
 - RandomGame should be split into GETting a random game and then joining it with a POST request
 - Making moves should be changed from PUT /games/<id> to something more RESTful
+- Database ids should not be included in GETs or used to access game instances. Game instances could have an UID or something similar
 
 
 
