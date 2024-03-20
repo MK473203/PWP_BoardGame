@@ -2,6 +2,7 @@
 Flask resources for interacting with game types
 """
 
+import json
 from flask import Response, request, url_for
 from flask_restful import Resource
 from jsonschema import ValidationError, validate
@@ -10,7 +11,7 @@ from werkzeug.exceptions import BadRequest
 
 from app import db, cache, delete_cache_entry
 from app.models import GameType
-from app.utils import require_admin
+from app.utils import MASON, BoardGameBuilder, require_admin
 
 
 class GameTypeCollection(Resource):
@@ -20,27 +21,37 @@ class GameTypeCollection(Resource):
     def get(self):
         """
         Get a list of all game types.
-        Input:
-        Output: List of all game types
+            Input:
+            
+            Output: List of all game types
         """
 
         game_type_list = []
         game_types = GameType.query.all()
 
         for game_type in game_types:
+            game_type_obj = BoardGameBuilder(
+                id=game_type.id,
+                name=game_type.name,
+                defaultState=game_type.defaultState
+            )
+            game_type_obj.add_control("self", url_for("api.gametypeitem", game_type=game_type))
+            game_type_list.append(game_type_obj)
 
-            game_type_dict = {"id": game_type.id,
-                              "name": game_type.name,
-                              "defaultState": game_type.defaultState}
+        body = BoardGameBuilder(items=game_type_list)
+        body.add_board_game_namespace()
+        body.add_control_all_users()
+        body.add_control_all_games()
+        body.add_control_add_game_type()
 
-            game_type_list.append(game_type_dict)
-
-        return game_type_list, 200
+        return Response(json.dumps(body), 200, mimetype=MASON)
 
     @require_admin
     def post(self):
-        """Create a new game type
+        """
+        Create a new game type
             Input: json with the fields 'name' and 'defaultState'
+            
             Output: Response with a header to the location of the new game type
         """
 
@@ -61,10 +72,10 @@ class GameTypeCollection(Resource):
 
         delete_cache_entry(url_for("api.gametypecollection"))
 
-        return Response(status=201,
-                        headers={"Location":
-                                 url_for("api.gametypeitem",
-                                         game_type=game_type)})
+        return Response(
+            status=201,
+            headers={"Location":url_for("api.gametypeitem", game_type=game_type)}
+        )
 
 
 class GameTypeItem(Resource):
@@ -72,23 +83,31 @@ class GameTypeItem(Resource):
 
     @cache.cached(timeout=0)
     def get(self, game_type):
-        """Get an game type's information
-            Input: game type in the address
+        """
+        Get a game_type's information
+            Input: Game_type name in the address
+            
             Output: Dictionary with all relevant information on the specified game type
         """
 
-        game_type_dict = {
-            "id": game_type.id,
-            "name": game_type.name,
-            "defaultState": game_type.defaultState,
-        }
+        body = BoardGameBuilder(
+            id=game_type.id,
+            name=game_type.name,
+            defaultState=game_type.defaultState,
+        )
+        body.add_board_game_namespace()
+        body.add_control_all_game_types()
+        body.add_control_edit_game_type(game_type)
+        body.add_control_delete_game_type(game_type)
 
-        return game_type_dict, 200
+        return Response(json.dumps(body), 200, mimetype=MASON)
 
     @require_admin
     def put(self, game_type):
-        """Update a game type's information. Requires admin privileges
-            Input: Game type in the address and json with the fields 'name' and/or 'defaultState'
+        """
+        Update a game type's information. Requires admin privileges
+            Input: Game_type in the address and json with the fields 'name' and/or 'defaultState'
+            
             Output: Response with a header to the location of the updated game type
         """
 
@@ -116,15 +135,17 @@ class GameTypeItem(Resource):
         delete_cache_entry(url_for("api.gametypecollection"))
         delete_cache_entry(url_for("api.gametypeitem", game_type=game_type))
 
-        return Response(status=200,
-                        headers={"Location":
-                                 url_for("api.gametypeitem",
-                                         game_type=game_type)})
+        return Response(
+            status=200,
+            headers={"Location": url_for("api.gametypeitem", game_type=game_type)}
+        )
 
     @require_admin
     def delete(self, game_type):
-        """Delete a game type. Requires admin privileges.
+        """
+        Delete a game type. Requires admin privileges.
             Input: Game type in the address
+            
             Output: 
         """
 
