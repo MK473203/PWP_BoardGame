@@ -3,11 +3,12 @@ Flask resources for interacting with game instances.
 Also allows users to join a random game instance of a wanted game type.
 """
 
+import json
 import secrets
 import pickle
 from random import randint
 
-from flask import Response, request, url_for, redirect
+from flask import Response, request, url_for
 from flask_restful import Resource
 from sqlalchemy.sql import select
 from jsonschema import ValidationError, validate
@@ -17,7 +18,7 @@ from werkzeug.exceptions import BadRequest, Forbidden
 from app import db
 from app.game_logic import apply_move
 from app.models import Game, GamePlayers, GameType, User, key_hash
-from app.utils import ADMIN_KEY_HASH, require_admin, require_login
+from app.utils import ADMIN_KEY_HASH, MASON, BoardGameBuilder, require_admin, require_login
 
 
 class GameCollection(Resource):
@@ -28,24 +29,31 @@ class GameCollection(Resource):
             Input:
             Output: A list of all games
         """
-
         games = []
         for game in Game.query.all():
             player = User.query.filter_by(id=game.currentPlayer).first()
             if player:
                 player = player.name
+
             gametype = GameType.query.filter_by(id=game.type).first()
             if gametype:
                 gametype = gametype.name
-            games.append({
-                "id": game.id,
-                "type": gametype,
-                "result": game.result,
-                "state": game.state,
-                "currentPlayer": player
-            })
 
-        return games, 200
+            game_obj = BoardGameBuilder(
+                id=game.id,
+                type=gametype,
+                result=game.result,
+                state=game.state,
+                currentPlayer=player
+            )
+            game_obj.add_control("self", url_for("api.gameitem", game_id=game.id))
+            games.append(game_obj)
+
+        body = BoardGameBuilder(items=games)
+        body.add_board_game_namespace()
+        body.add_control_add_game()
+        body.add_control_all_users()
+        return Response(json.dumps(body), 200, mimetype=MASON)
 
     @require_admin
     def post(self):
@@ -83,8 +91,7 @@ class GameCollection(Resource):
         db.session.add(game)
         db.session.commit()
 
-        return Response(status=201, headers={"location":
-                                             url_for("api.gameitem", game_id=game.id)})
+        return Response(status=201, headers={"Location": url_for("api.gameitem", game_id=game.id)})
 
 
 class GameItem(Resource):
@@ -97,23 +104,29 @@ class GameItem(Resource):
         """
         game = Game.query.filter_by(id=game_id).first()
         if not game:
-            return "Game not found", 409
-        player = User.query.filter_by(id=game.currentPlayer).first()
-        if player:
-            player = player.name
+            return Response("Game not found", 409)
+
+        current_player = User.query.filter_by(id=game.currentPlayer).first()
+        if current_player:
+            current_player = current_player.name
+
         players = []
         for p in game.players:
             players.append(p.name)
-        info = {
-            "id": game.id,
-            "type": GameType.query.filter_by(id=game.type).first().name,
-            "result": game.result,
-            "state": game.state,
-            "currentPlayer": player,
-            "moveHistory": str(game.moveHistory),
-            "players": players
-        }
-        return info, 200
+
+        body = BoardGameBuilder(
+            id=game.id,
+            type=GameType.query.filter_by(id=game.type).first().name,
+            result=game.result,
+            state=game.state,
+            currentPlayer=current_player,
+            moveHistory=str(game.moveHistory),
+            players=players
+        )
+        body.add_board_game_namespace()
+        body.add_control_all_games()
+
+        return Response(json.dumps(body), 200, mimetype=MASON)
 
     @require_login
     def put(self, game_id, **kwargs):
@@ -135,22 +148,17 @@ class GameItem(Resource):
         """
 
         db_game = Game.query.get(game_id)
-
         if not db_game:
-            return "Game instance not found", 404
+            return Response("Game instance not found", 404)
 
         game_type = GameType.query.filter_by(id=db_game.type).first().name
 
-        hashed_key = key_hash(
-            request.headers.get("Api_key", "").strip())
-
+        hashed_key = key_hash(request.headers.get("Api_key", "").strip())
         admin = secrets.compare_digest(hashed_key, ADMIN_KEY_HASH)
 
-        correct_user = kwargs["login_user_id"] == db_game.currentPlayer
-
-        if correct_user:
+        is_correct_user = kwargs["login_user_id"] == db_game.currentPlayer
+        if is_correct_user:
             # Allow the current player to make a move or leave the game without making a move
-
             try:
                 validate(request.json, Game.move_schema(),
                          format_checker=Draft7Validator.FORMAT_CHECKER)
@@ -160,31 +168,31 @@ class GameItem(Resource):
             if request.json["move"] == "":
                 db_game.currentPlayer = None
                 db.session.commit()
-                return "Current player left the game", 200
+                return Response("Current player left the game", 200)
 
-            move_result = apply_move(
-                request.json["move"], db_game.state, game_type)
+            move_result = apply_move(request.json["move"], db_game.state, game_type)
             if move_result is None:
-                return "Requested move is invalid. " + \
-                    "Try again or leave the game with an empty move \"\"", 400
+                return Response("Requested move is invalid. " +
+                    "Try again or leave the game with an empty move \"\"", 400)
 
-            User.query.get(db_game.currentPlayer).totalTime \
-                += request.json["moveTime"]
+            User.query.get(db_game.currentPlayer).totalTime += request.json["moveTime"]
             User.query.get(db_game.currentPlayer).turnsPlayed += 1
 
             query = GamePlayers.select().where((GamePlayers.c.gameId == db_game.id) &
                                                (GamePlayers.c.playerId == db_game.currentPlayer))
             query_result = db.session.execute(query).first()
             if not query_result:
-                ins = GamePlayers.insert().values(gameId=db_game.id,
-                                                  playerId=db_game.currentPlayer,
-                                                  team=int(db_game.state[0]))
+                ins = GamePlayers.insert().values(
+                    gameId=db_game.id,
+                    playerId=db_game.currentPlayer,
+                    team=int(db_game.state[0])
+                )
                 db.session.execute(ins)
             else:
-                update = GamePlayers.update()\
-                                    .where((GamePlayers.c.gameId == db_game.id) &
-                                           (GamePlayers.c.playerId == db_game.currentPlayer))\
-                                    .values(team=int(db_game.state[0]))
+                update = GamePlayers.update().where(
+                    (GamePlayers.c.gameId == db_game.id) &
+                    (GamePlayers.c.playerId == db_game.currentPlayer)
+                ).values(team=int(db_game.state[0]))
                 db.session.execute(update)
 
             move_history_list = []
@@ -203,7 +211,6 @@ class GameItem(Resource):
             return Response(db_game.state + " result:" + str(move_result[1]), 200)
 
         if admin:
-
             try:
                 validate(request.json, Game.admin_schema(),
                          format_checker=Draft7Validator.FORMAT_CHECKER)
@@ -214,9 +221,11 @@ class GameItem(Resource):
 
             if "currentPlayer" in request.json:
                 game_to_modify.currentPlayer = request.json["currentPlayer"]
-                insert = GamePlayers.insert().values(gameId=game_to_modify.id,
-                                                     playerId=request.json["currentPlayer"],
-                                                     team=None)
+                insert = GamePlayers.insert().values(
+                    gameId=game_to_modify.id,
+                    playerId=request.json["currentPlayer"],
+                    team=None
+                )
                 db.session.execute(insert)
 
             # More options can be added if needed
@@ -241,7 +250,7 @@ class GameItem(Resource):
             db.session.commit()
             return 200
         else:
-            return "Specified game id not found", 404
+            return Response("Specified game id not found", 404)
 
 
 class RandomGame(Resource):
@@ -256,12 +265,13 @@ class RandomGame(Resource):
             Input: Game type in the address
             Output: Redirect to the url of chosen/created game
         """
-        empty_games = Game.query.filter_by(
-            type=game_type.id, currentPlayer=None, result=-1).all()
+        empty_games = Game.query.filter_by(type=game_type.id, currentPlayer=None, result=-1).all()
+        user_id = kwargs["login_user_id"]
 
         user_played_games = [
             game.id for game in empty_games
-            if kwargs["login_user_id"] in [user.id for user in game.players]]
+            if user_id in [user.id for user in game.players]
+        ]
 
         query = select(GamePlayers.c.gameId, GamePlayers.c.team).where(
             GamePlayers.c.gameId.in_(user_played_games))
@@ -270,33 +280,41 @@ class RandomGame(Resource):
         available_games = []
         for game in empty_games:
             if game.id in user_played_games:
+                # User has played in this game already
                 games_on_the_same_team = [
                     game_id for game_id, team in game_id_and_team_list
                     if team == int(game.state[0])]
                 if game.id in games_on_the_same_team:
+                    # User has not played on the opponent side for this game
                     available_games.append(game)
             else:
                 available_games.append(game)
 
-        user = User.query.get(kwargs["login_user_id"])
+        user = User.query.get(user_id)
         game_id = None
         if available_games:
+            # At least 1 available game was found
             ind = randint(0, len(available_games) - 1)
-            available_games[ind].currentPlayer = kwargs["login_user_id"]
-            if kwargs["login_user_id"] not in [user.id for user in available_games[ind].players]:
+            available_games[ind].currentPlayer = user_id
+            if user_id not in [user.id for user in available_games[ind].players]:
                 available_games[ind].players += [user]
             db.session.commit()
 
             game_id = available_games[ind].id
         else:
+            # No games available, create new game
             typeobj = GameType.query.filter_by(id=game_type.id).first()
-            game = Game(type=game_type.id,
-                        state=typeobj.defaultState,
-                        currentPlayer=kwargs["login_user_id"],
-                        moveHistory=None,
-                        players=[user])
+            game = Game(
+                type=game_type.id,
+                state=typeobj.defaultState,
+                currentPlayer=user_id,
+                moveHistory=None,
+                players=[user]
+            )
             db.session.add(game)
             db.session.commit()
             game_id = game.id
 
-        return redirect(url_for("api.gameitem", game_id=game_id))
+        body = BoardGameBuilder()
+        body.add_control("self", url_for("api.gameitem", game_id=game_id))
+        return Response(json.dumps(body), 200, mimetype=MASON)
