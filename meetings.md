@@ -30,7 +30,7 @@ Additionally, Mika identified several issues in the database design and implemen
 
 ### Action points
 - gameHistory and history should be replaced with a many-to-many relationship between users and games.
-- Avoid having to parse frequently accessed- or large quantity of information from strings.
+- Avoid having to parse frequently accesse- or large quantity of information from strings.
 - Add a better way to track turns, that does not depend on large scale string parsing.
 - gameTypes should be moved to a table in the database.
 - Database population should be done with CLI commands (See Flask API Project Layout in Lovelace)
@@ -39,14 +39,18 @@ Additionally, Mika identified several issues in the database design and implemen
 
 
 ## Meeting 3.
-* **DATE:**
-* **ASSISTANTS:**
+* **DATE: 20.3.2024**
+* **ASSISTANTS: Mika Oja**
 
 ### Minutes
-*Summary of what was discussed during the meeting*
+- A quick demo of our API's functionality
+- Showcasing our test coverage and pylint score
+- Mika graded our code and wiki
 
 ### Action points
-*List here the actions points discussed with assistants*
+- Put method requests should always include all relevant information. No optional fields.
+- RandomGame should be split into GETting a random game and then joining it with a POST request
+- Making moves should be changed from PUT /games/<id> to something more RESTful
 
 
 
