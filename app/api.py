@@ -16,6 +16,7 @@ api = Api(api_bp)
 
 @api_bp.route("/")
 def entrypoint():
+    """ Entrypoint into the API. """
     body = BoardGameBuilder()
     body.add_board_game_namespace()
     body.add_control_all_game_types()
