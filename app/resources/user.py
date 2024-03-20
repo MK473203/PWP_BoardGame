@@ -9,7 +9,7 @@ from jsonschema import ValidationError, validate
 from jsonschema.validators import Draft7Validator
 from werkzeug.exceptions import BadRequest, Forbidden
 
-from app import db, cache
+from app import db, cache, delete_cache_entry
 from app.models import User
 from app.utils import key_hash, require_login, BoardGameBuilder, MASON
 
@@ -50,7 +50,7 @@ class UserCollection(Resource):
         """
 
         try:
-            validate(request.json, User.json_schema(),
+            validate(request.json, User.post_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
@@ -73,9 +73,7 @@ class UserCollection(Resource):
         db.session.add(user)
         db.session.commit()
 
-        collection_url = "view/" + url_for("api.usercollection")
-        if cache.has(collection_url):
-            cache.delete(collection_url)
+        delete_cache_entry(url_for("api.usercollection"))
 
         return Response(status=201,
                         headers={"Location":
@@ -126,6 +124,12 @@ class UserItem(Resource):
         if kwargs["login_user_id"] != user.id:
             raise Forbidden
 
+        try:
+            validate(request.json, User.put_schema(),
+                     format_checker=Draft7Validator.FORMAT_CHECKER)
+        except ValidationError as e:
+            raise BadRequest(description=str(e)) from e
+
         if "name" in request.json:
 
             user_with_name = User.query.filter_by(name=request.json["name"]).first()
@@ -147,13 +151,8 @@ class UserItem(Resource):
 
         db.session.commit()
 
-        item_url = "view/" + url_for("api.useritem", user=user)
-        collection_url = "view/" + url_for("api.usercollection")
-
-        if cache.has(item_url):
-            cache.delete(item_url)
-        if cache.has(collection_url):
-            cache.delete(collection_url)
+        delete_cache_entry(url_for("api.usercollection"))
+        delete_cache_entry(url_for("api.useritem", user=user))
 
         return Response(status=200, headers={"Location": url_for("api.useritem", user=user)})
 
@@ -171,12 +170,7 @@ class UserItem(Resource):
         db.session.delete(db_user)
         db.session.commit()
 
-        item_url = "view/" + url_for("api.useritem", user=user)
-        collection_url = "view/" + url_for("api.usercollection")
-
-        if cache.has(item_url):
-            cache.delete(item_url)
-        if cache.has(collection_url):
-            cache.delete(collection_url)
+        delete_cache_entry(url_for("api.usercollection"))
+        delete_cache_entry(url_for("api.useritem", user=user))
 
         return 200

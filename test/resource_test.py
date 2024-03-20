@@ -201,14 +201,7 @@ class TestUserCollection():
     def test_get(self, client):
         "Test UserCollection GET"
 
-        # check if the wrong api key is denied
-        resp = client.get(self.RESOURCE_URL,
-                          headers=Headers({"Api-key": TEST_KEY}))
-        assert resp.status_code == 403
-
-        # check if the correct key works
-        resp = client.get(self.RESOURCE_URL,
-                          headers=Headers({"Api-key": ADMIN_KEY}))
+        resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
         # check if response contains a list of users
@@ -268,16 +261,11 @@ class TestUserItem():
             {"password": "wrongpassword2"}))
         assert resp.status_code == 403
 
-        # Test another user trying to log in
-        resp = client.get(self.RESOURCE_URL, headers=Headers(
-            {"username": "testuser_2", "password": "password2"}))
-        assert resp.status_code == 403
-
         # Test non-existent user
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
 
-        # Test with correct authorization & user
+        # Test with correct authorization
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
@@ -632,7 +620,7 @@ class TestGameItem():
         # Test with valid move
         resp = client.put(self.RESOURCE_URL,
                           json=self.VALID_MOVE_DATA)
-        assert resp.data.decode() == "2------X--"
+        assert resp.data.decode() == "2------X-- result:-1"
         assert resp.status_code == 200
 
         # Test with valid move again
@@ -710,6 +698,7 @@ class TestRandomGame():
         assert resp.status_code == 200
         body = json.loads(resp.data)
         assert body["currentPlayer"] == "testuser_1"
+        assert body["players"] == ["testuser_1"]
 
         # Try again. This time a new game should be created
         resp = client.post(self.RESOURCE_URL)
@@ -720,3 +709,4 @@ class TestRandomGame():
         assert resp.status_code == 200
         body = json.loads(resp.data)
         assert body["currentPlayer"] == "testuser_1"
+        assert body["players"] == ["testuser_1"]

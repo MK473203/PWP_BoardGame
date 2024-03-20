@@ -54,10 +54,10 @@ class GameType(db.Model):
     id = db.Column(db.Integer, primary_key=True,
                    unique=True, autoincrement=True)
     name = db.Column(db.String(64), unique=True)
-    defaultState = db.Column(db.String(64))
+    defaultState = db.Column(db.String(256))
 
     @staticmethod
-    def json_schema():
+    def post_schema():
         """JSON schema for creating a game type"""
         schema = {
             "type": "object",
@@ -71,7 +71,27 @@ class GameType(db.Model):
         }
         props["defaultState"] = {
             "type": "string",
+            "maxLength": 256
+        }
+        return schema
+
+    @staticmethod
+    def put_schema():
+        """JSON schema for modifying a game type's information"""
+        schema = {
+            "type": "object",
+            "anyOf": [{"required": ["name"]},
+                      {"required": ["defaultState"]}]
+        }
+        props = schema["properties"] = {}
+        props["name"] = {
+            "type": "string",
+            "minLength": 1,
             "maxLength": 64
+        }
+        props["defaultState"] = {
+            "type": "string",
+            "maxLength": 256
         }
         return schema
 
@@ -91,11 +111,30 @@ class User(db.Model):
         "Game", secondary=GamePlayers, back_populates="players")
 
     @staticmethod
-    def json_schema():
+    def post_schema():
         """JSON schema for creating an user"""
         schema = {
             "type": "object",
             "required": ["name", "password"]
+        }
+        props = schema["properties"] = {}
+        props["name"] = {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+        }
+        props["password"] = {
+            "type": "string"
+        }
+        return schema
+
+    @staticmethod
+    def put_schema():
+        """JSON schema for modifying an user's information"""
+        schema = {
+            "type": "object",
+            "anyOf": [{"required": ["name"]},
+                      {"required": ["password"]}]
         }
         props = schema["properties"] = {}
         props["name"] = {
@@ -142,7 +181,7 @@ class Game(db.Model):
         "User", secondary=GamePlayers, back_populates="games")
 
     @staticmethod
-    def json_schema():
+    def post_schema():
         """JSON schema for creating a game instance"""
         schema = {
             "type": "object",
@@ -194,8 +233,9 @@ def init_db_command():
     """
 
     if os.path.isfile(current_app.config["SQLALCHEMY_DATABASE_URI"][10:]):
-        print("A .db file already exists. Delete it to use this command.")
-        return
+        click.confirm(
+            "There already is an existing .db file. Do you want to delete it?", abort=True)
+        os.remove(current_app.config["SQLALCHEMY_DATABASE_URI"][10:])
 
     db.create_all()
 
@@ -209,8 +249,9 @@ def populate_db_command():
     """
 
     if os.path.isfile(current_app.config["SQLALCHEMY_DATABASE_URI"][10:]):
-        print("A .db file already exists. Delete it to use this command.")
-        return
+        click.confirm(
+            "There already is an existing .db file. Do you want to delete it?", abort=True)
+        os.remove(current_app.config["SQLALCHEMY_DATABASE_URI"][10:])
 
     db.create_all()
 
@@ -228,5 +269,10 @@ def populate_db_command():
                  currentPlayer=user1.id)
 
     db.session.add(game1)
+    db.session.commit()
 
+    insert = GamePlayers.insert().values(
+        gameId=game1.id, playerId=user1.id, team=None)
+
+    db.session.execute(insert)
     db.session.commit()

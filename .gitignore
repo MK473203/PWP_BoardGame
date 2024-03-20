@@ -5,4 +5,4 @@ start.bat
 .vscode
 boardgame.egg-info
 .coverage
-instance/cache
+instance
