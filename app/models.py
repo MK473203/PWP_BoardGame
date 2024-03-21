@@ -3,6 +3,7 @@ SQLAlchemy models
 """
 
 import os
+import uuid
 
 import click
 from flask import current_app
@@ -10,15 +11,14 @@ from werkzeug.exceptions import NotFound
 from werkzeug.routing import BaseConverter
 
 from app import db
-from app.utils import key_hash
 
 GamePlayers = db.Table("GamePlayers",
-    db.Column("gameId", db.Integer,
-              db.ForeignKey("Game.id", ondelete="CASCADE"), primary_key=True),
-    db.Column("playerId", db.Integer,
-              db.ForeignKey("User.id", ondelete="CASCADE"), primary_key=True),
-    db.Column("team", db.Integer)
-)
+                       db.Column("gameId", db.Integer,
+                                 db.ForeignKey("Game.id", ondelete="CASCADE"), primary_key=True),
+                       db.Column("playerId", db.Integer,
+                                 db.ForeignKey("User.id", ondelete="CASCADE"), primary_key=True),
+                       db.Column("team", db.Integer)
+                       )
 
 
 class GameTypeConverter(BaseConverter):
@@ -47,6 +47,19 @@ class UserConverter(BaseConverter):
         return value.name
 
 
+class GameConverter(BaseConverter):
+    """Class for converting game instance uuids to python objects and vice versa"""
+
+    def to_python(self, value):
+        db_game = Game.query.filter_by(uuid=value).first()
+        if db_game is None:
+            raise NotFound
+        return db_game
+
+    def to_url(self, value):
+        return value.uuid
+
+
 class GameType(db.Model):
     """SQLAlchemy model class for game types"""
     __tablename__ = "GameType"
@@ -57,31 +70,11 @@ class GameType(db.Model):
     defaultState = db.Column(db.String(256))
 
     @staticmethod
-    def post_schema():
+    def json_schema():
         """JSON schema for creating a game type"""
         schema = {
             "type": "object",
             "required": ["name", "defaultState"]
-        }
-        props = schema["properties"] = {}
-        props["name"] = {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-        }
-        props["defaultState"] = {
-            "type": "string",
-            "maxLength": 256
-        }
-        return schema
-
-    @staticmethod
-    def put_schema():
-        """JSON schema for modifying a game type's information"""
-        schema = {
-            "type": "object",
-            "anyOf": [{"required": ["name"]},
-                      {"required": ["defaultState"]}]
         }
         props = schema["properties"] = {}
         props["name"] = {
@@ -111,30 +104,11 @@ class User(db.Model):
         "Game", secondary=GamePlayers, back_populates="players")
 
     @staticmethod
-    def post_schema():
+    def json_schema():
         """JSON schema for creating an user"""
         schema = {
             "type": "object",
             "required": ["name", "password"]
-        }
-        props = schema["properties"] = {}
-        props["name"] = {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-        }
-        props["password"] = {
-            "type": "string"
-        }
-        return schema
-
-    @staticmethod
-    def put_schema():
-        """JSON schema for modifying an user's information"""
-        schema = {
-            "type": "object",
-            "anyOf": [{"required": ["name"]},
-                      {"required": ["password"]}]
         }
         props = schema["properties"] = {}
         props["name"] = {
@@ -169,6 +143,7 @@ class Game(db.Model):
 
     id = db.Column(db.Integer, primary_key=True,
                    unique=True, autoincrement=True)
+    uuid = db.Column(db.String(32), unique=True)
     type = db.Column(db.Integer, db.ForeignKey(
         "GameType.id", ondelete="CASCADE"))
     state = db.Column(db.Text)
@@ -179,6 +154,10 @@ class Game(db.Model):
 
     players = db.relationship(
         "User", secondary=GamePlayers, back_populates="games")
+
+    def __init__(self, **kwargs):
+        super(Game, self).__init__(**kwargs)
+        self.uuid = uuid.uuid4().hex
 
     @staticmethod
     def post_schema():
@@ -210,16 +189,15 @@ class Game(db.Model):
         return schema
 
     @staticmethod
-    def admin_schema():
+    def put_schema():
         """JSON schema for making admin privileged modifications"""
         schema = {
             "type": "object",
-            "anyOf": [{"required": ["currentPlayer"]}]
+            "required": ["currentPlayer"]
         }
         props = schema["properties"] = {}
         props["currentPlayer"] = {
-            "type": "integer",
-            "enum": [row[0] for row in db.session.query(User.id).all()] + [None]
+            "type": "string"
         }
         return schema
 
@@ -258,6 +236,8 @@ def populate_db_command():
     game_type_1 = GameType(name="tictactoe", defaultState="1---------")
     db.session.add(game_type_1)
     db.session.commit()
+
+    from app.utils import key_hash
 
     user1 = User(name="user1", password=key_hash("123456789"))
     user2 = User(name="user2", password=key_hash("salasana1"))

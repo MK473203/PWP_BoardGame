@@ -56,6 +56,7 @@ def create_app(test_config=None):
 
     app.url_map.converters["game_type"] = models.GameTypeConverter
     app.url_map.converters["user"] = models.UserConverter
+    app.url_map.converters["game"] = models.GameConverter
     app.register_blueprint(api.api_bp)
     app.cli.add_command(models.init_db_command)
     app.cli.add_command(models.populate_db_command)

@@ -1,14 +1,13 @@
 import json
 import pytest
+import re
 from flask.testing import FlaskClient
 from jsonschema import validate
-from sqlalchemy.engine import Engine
-from sqlalchemy import event
 from werkzeug.datastructures import Headers
 
 from app import create_app, db
-from app.models import User, Game, GameType, key_hash
-from app.utils import ADMIN_KEY
+from app.models import User, Game, GameType
+from app.utils import ADMIN_KEY, key_hash
 
 TEST_KEY = "verysafetestkey"
 
@@ -34,15 +33,6 @@ class AuthHeaderClient(FlaskClient):
         return super().open(*args, **kwargs)
 
 
-@event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, _):
-    """Enable foreign keys in sqlite"""
-
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
-
 @pytest.fixture
 def client():
     """Pytest fixture for creating the flask app and populating the database"""
@@ -60,6 +50,12 @@ def client():
 
     app.test_client_class = AuthHeaderClient
     yield app.test_client()
+
+
+@pytest.fixture
+def game_url(client):
+    body = json.loads(client.get("/api/games/").data)
+    yield body["items"][0]["@controls"]["self"]["href"]
 
 
 def _populate_db():
@@ -84,7 +80,8 @@ def _populate_db():
 
     user_1 = User.query.filter_by(name="testuser_1").first()
 
-    game = Game(type=tictactoe.id, state=tictactoe.defaultState,
+    game = Game(type=tictactoe.id,
+                state=tictactoe.defaultState,
                 currentPlayer=user_1.id)
     db.session.add(game)
 
@@ -205,11 +202,10 @@ class TestUserCollection():
         assert resp.status_code == 200
         body = json.loads(resp.data)
         # check if response contains a list of users
-        assert isinstance(body, list)
-        assert len(body) > 0
+        assert isinstance(body["items"], list)
+        assert len(body["items"]) > 0
         # check if each user has 'id' and 'name' fields
-        for user in body:
-            assert 'id' in user
+        for user in body["items"]:
             assert 'name' in user
 
     def test_post(self, client):
@@ -239,7 +235,8 @@ class TestUserCollection():
         # check if the user is created
         resp = client.get(self.RESOURCE_URL)
         body = json.loads(resp.data)
-        assert self.VALID_USER_DATA["name"] in [user["name"] for user in body]
+        assert self.VALID_USER_DATA["name"] in [
+            user["name"] for user in body["items"]]
 
         # Try creating an user with the same information
         resp = client.post(self.RESOURCE_URL, json=self.VALID_USER_DATA)
@@ -269,11 +266,13 @@ class TestUserItem():
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert body["id"] == 1
         assert body["name"] == "testuser_1"
         assert body["turnsPlayed"] == 0
         assert body["totalTime"] == 0
-        assert body["games"] == [{'id': 2, 'type': 1, 'result': -1}]
+        for game in body["games"]:
+            assert 'id' in game
+            assert 'type' in game
+            assert 'result' in game
 
     def test_put(self, client):
         "Test UserItem PUT"
@@ -363,14 +362,14 @@ class TestGameTypeCollection():
         assert resp.status_code == 200
         body = json.loads(resp.data)
         # check if response contains a list of game types
-        assert isinstance(body, list)
-        assert len(body) > 0
+        assert isinstance(body["items"], list)
+        assert len(body["items"]) > 0
         # check if each game type has 'id', 'name' and 'defaultState' fields
-        for game_type in body:
+        for game_type in body["items"]:
             assert 'id' in game_type
             assert 'name' in game_type
             assert 'defaultState' in game_type
-        assert body[0]['name'] == 'tictactoe'
+        assert body["items"][0]['name'] == 'tictactoe'
 
     def test_post(self, client):
         "Test GameTypeCollection POST"
@@ -403,7 +402,7 @@ class TestGameTypeCollection():
         resp = client.get(self.RESOURCE_URL)
         body = json.loads(resp.data)
         assert self.VALID_GAME_TYPE_DATA["name"] in [
-            game_type["name"] for game_type in body]
+            game_type["name"] for game_type in body["items"]]
 
         # Test creating a game type with the same name
         resp = client.post(self.RESOURCE_URL, json=self.VALID_GAME_TYPE_DATA)
@@ -503,16 +502,16 @@ class TestGameCollection():
         assert resp.status_code == 200
         body = json.loads(resp.data)
         # check if response contains a list of game instances
-        assert isinstance(body, list)
+        assert isinstance(body["items"], list)
         assert len(body) > 0
         # check if each game has proper fields
-        for game_type in body:
-            assert 'id' in game_type
-            assert 'type' in game_type
-            assert 'result' in game_type
-            assert 'state' in game_type
-            assert 'currentPlayer' in game_type
-        assert body[0]['state'] == '1---------'
+        for game in body["items"]:
+            assert 'id' in game
+            assert 'type' in game
+            assert 'result' in game
+            assert 'state' in game
+            assert 'currentPlayer' in game
+        assert body["items"][0]['state'] == '1---------'
 
     def test_post(self, client):
         """Test GameCollection POST"""
@@ -540,19 +539,81 @@ class TestGameCollection():
         # test with valid game data
         resp = client.post(self.RESOURCE_URL, json=self.VALID_GAME_DATA)
         assert resp.status_code == 201
-        assert resp.headers["Location"] == "/api/games/4"
+        assert re.fullmatch(r"/api/games/\w{32}", resp.headers["Location"])
         # check if the game is created
         resp = client.get(self.RESOURCE_URL)
         body = json.loads(resp.data)
         assert self.VALID_GAME_DATA["type"] in [
-            game_type["type"] for game_type in body]
+            game_type["type"] for game_type in body["items"]]
 
 
 class TestGameItem():
-    """Tests for the /api/games/<int:game_id>/ endpoint"""
+    """Tests for the /api/games/<game:game>/ endpoint"""
 
-    RESOURCE_URL = "/api/games/1"
     INVALID_URL = "/api/games/123"
+
+    VALID_ADMIN_PUT_DATA = {
+        "currentPlayer": "testuser_2"
+    }
+
+    def test_get(self, client, game_url):
+        """Test GameItem GET"""
+
+        # Test non-existent game type
+        resp = client.get(self.INVALID_URL)
+        assert resp.status_code == 404
+
+        resp = client.get(game_url)
+        assert resp.status_code == 200
+        body = json.loads(resp.data)
+        assert body["id"] == game_url[11:]
+        assert body["type"] == "tictactoe"
+        assert body["result"] == -1
+        assert body["state"] == "1---------"
+        assert body["currentPlayer"] == "testuser_1"
+        assert body["moveHistory"] == "None"
+        assert body["players"] == []
+
+    def test_put(self, client, game_url):
+        """Test GameItem PUT"""
+
+        # test with wrong content type
+        resp = client.put(game_url, data="notjson",
+                          headers=Headers({"Content-Type": "text"}))
+        assert resp.status_code == 415
+
+        # Test setting current player with wrong api key
+        resp = client.put(game_url,
+                          json=self.VALID_ADMIN_PUT_DATA, headers=Headers({"Api-key": TEST_KEY}))
+        assert resp.status_code == 403
+
+        resp = client.put(game_url,
+                          json={"somerandomfield": "somerandomvalue"})
+        assert resp.status_code == 400
+
+        # Test setting current player with admin privileges
+        resp = client.put(game_url,
+                          json=self.VALID_ADMIN_PUT_DATA)
+        assert resp.status_code == 200
+
+    def test_delete(self, client, game_url):
+
+        # Game should be deleted successfully
+        resp = client.delete(game_url)
+        assert resp.status_code == 200
+
+        # Trying to delete the same game should lead to 404
+        resp = client.delete(game_url)
+        assert resp.status_code == 404
+
+        resp = client.delete(self.INVALID_URL)
+        assert resp.status_code == 404
+
+
+class TestMoveCollection():
+    """Tests for the /api/games/<game:game>/moves endpoint"""
+
+    INVALID_URL = "/api/games/123/moves"
 
     VALID_MOVE_DATA = {
         "move": 6,
@@ -573,140 +634,84 @@ class TestGameItem():
         "moveTime": 1
     }
 
-    VALID_ADMIN_PUT_DATA = {
-        "currentPlayer": 2
-    }
+    def test_get(self, client, game_url):
+        pass
 
-    def test_get(self, client):
-        """Test GameItem POST"""
+    def test_post(self, client, game_url):
 
-        # Test non-existent game type
-        resp = client.get(self.INVALID_URL)
-        assert resp.status_code == 409
-
-        resp = client.get(self.RESOURCE_URL)
-        assert resp.status_code == 200
-        body = json.loads(resp.data)
-        assert body["id"] == 1
-        assert body["type"] == "tictactoe"
-        assert body["result"] == -1
-        assert body["state"] == "1---------"
-        assert body["currentPlayer"] == "testuser_1"
-        assert body["moveHistory"] == "None"
-        assert body["players"] == []
-
-    def test_put(self, client):
-        """Test GameItem PUT"""
-
-        # test with wrong content type
-        resp = client.put(self.RESOURCE_URL, data="notjson",
-                          headers=Headers({"Content-Type": "text"}))
-        assert resp.status_code in (400, 415)
+        game_url = game_url + "/moves"
 
         # Test with invalid url
-        resp = client.put(self.INVALID_URL, json=self.VALID_MOVE_DATA)
+        resp = client.post(self.INVALID_URL, json=self.VALID_MOVE_DATA)
         assert resp.status_code == 404
 
         # Test with invalid move json
-        resp = client.put(self.RESOURCE_URL,
-                          json=self.INVALID_MOVE_DATA)
+        resp = client.post(game_url,
+                           json=self.INVALID_MOVE_DATA)
         assert resp.status_code == 400
 
         # Test with invalid move
-        resp = client.put(self.RESOURCE_URL,
-                          json=self.INVALID_TICTACTOE_MOVE_DATA)
+        resp = client.post(game_url,
+                           json=self.INVALID_TICTACTOE_MOVE_DATA)
         assert resp.status_code == 400
 
         # Test with valid move
-        resp = client.put(self.RESOURCE_URL,
-                          json=self.VALID_MOVE_DATA)
+        resp = client.post(game_url,
+                           json=self.VALID_MOVE_DATA)
         assert resp.data.decode() == "2------X-- result:-1"
         assert resp.status_code == 200
 
         # Test with valid move again
-        resp = client.put(self.RESOURCE_URL,
-                          json=self.VALID_MOVE_DATA, headers=Headers({"Api-key": ""}))
+        resp = client.post(game_url,
+                           json=self.VALID_MOVE_DATA, headers=Headers({"Api-key": ""}))
         assert resp.status_code == 403
 
-        # Test setting current player with wrong api key
-        resp = client.put(self.RESOURCE_URL,
-                          json=self.VALID_ADMIN_PUT_DATA, headers=Headers({"Api-key": TEST_KEY}))
-        assert resp.status_code == 403
-
-        resp = client.put(self.RESOURCE_URL,
-                          json={"somerandomfield": "somerandomvalue"})
-        assert resp.status_code == 400
-
-        # Test setting current player with admin privileges
-        resp = client.put(self.RESOURCE_URL,
-                          json=self.VALID_ADMIN_PUT_DATA)
-        assert resp.status_code == 200
-
-        print(client.get(self.RESOURCE_URL).data)
+        resp = client.put(game_url[:-6],
+                          json={"currentPlayer": "testuser_2"})
 
         # Test leaving the game
-        resp = client.put(self.RESOURCE_URL,
-                          json=self.LEAVE_GAME_DATA,
-                          headers=Headers({
-                              "username": "testuser_2",
-                              "password": "password2",
-                              "Api-key": ""
-                          }))
+        resp = client.post(game_url,
+                           json=self.LEAVE_GAME_DATA,
+                           headers=Headers({
+                               "username": "testuser_2",
+                               "password": "password2",
+                               "Api-key": ""
+                           }))
         assert resp.status_code == 200
-
-    def test_delete(self, client):
-        """Test GameItem DELETE"""
-
-        resp = client.get("/api/games/")
-        print(json.loads(resp.data))
-
-        # Game should be deleted successfully
-        resp = client.delete(self.RESOURCE_URL)
-        assert resp.status_code == 200
-
-        resp = client.get("/api/games/")
-        print(json.loads(resp.data))
-
-        # Trying to delete the same game should lead to 404
-        resp = client.delete(self.RESOURCE_URL)
-        assert resp.status_code == 404
-
-        resp = client.delete(self.INVALID_URL)
-        assert resp.status_code == 404
 
 
 class TestRandomGame():
-    """Tests for the /api/games/random/<game_type:game_type>/ endpoint"""
+    """Tests for the /api/games/random/<game_type:game_type> endpoint"""
 
     RESOURCE_URL = "/api/games/random/tictactoe"
     INVALID_URL = "/api/games/random/epicgame"
 
-    def test_post(self, client):
-        """Test RandomGame POST"""
+    def test_get(self, client):
+        """Test RandomGame GET"""
 
         # Test with invalid game type
-        resp = client.post(self.INVALID_URL)
+        resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
 
         # Test with valid game type
-        resp = client.post(self.RESOURCE_URL)
+        resp = client.get(self.RESOURCE_URL)
         location = resp.headers["Location"]
-        assert resp.status_code == 302
+        assert resp.status_code == 200
 
         # Test if game id we got points to the correct game
         resp = client.get(location)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert body["currentPlayer"] == "testuser_1"
-        assert body["players"] == ["testuser_1"]
+        assert body["currentPlayer"] is None
+        assert body["players"] == []
 
         # Try again. This time a new game should be created
-        resp = client.post(self.RESOURCE_URL)
+        resp = client.get(self.RESOURCE_URL)
         location = resp.headers["Location"]
-        assert resp.status_code == 302
+        assert resp.status_code == 200
 
         resp = client.get(location)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert body["currentPlayer"] == "testuser_1"
-        assert body["players"] == ["testuser_1"]
+        assert body["currentPlayer"] is None
+        assert body["players"] == []

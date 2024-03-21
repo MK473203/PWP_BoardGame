@@ -17,7 +17,7 @@ from app.utils import key_hash, require_login, BoardGameBuilder, MASON
 class UserCollection(Resource):
     """Resource for handling user creation. Admins can also get a list of all users."""
 
-    #TODO: Add varying return values for admin / user with account / user without account
+    # TODO: Add varying return values for admin / user with account / user without account
     @cache.cached(timeout=900)
     def get(self):
         """
@@ -31,7 +31,7 @@ class UserCollection(Resource):
         users = User.query.all()
 
         for user in users:
-            user_obj = BoardGameBuilder(id=user.id, name=user.name)
+            user_obj = BoardGameBuilder(name=user.name)
             user_obj.add_control("self", url_for("api.useritem", user=user))
             user_list.append(user_obj)
 
@@ -50,7 +50,7 @@ class UserCollection(Resource):
         """
 
         try:
-            validate(request.json, User.post_schema(),
+            validate(request.json, User.json_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
@@ -97,12 +97,13 @@ class UserItem(Resource):
 
         game_list = []
         for game in user.games:
-            game_obj = BoardGameBuilder(id=game.id, type=game.type, result=game.result)
-            game_obj.add_control("self", url_for("api.gameitem", game_id=game.id))
+            game_obj = BoardGameBuilder(
+                id=game.uuid, type=game.type, result=game.result)
+            game_obj.add_control("self", url_for(
+                "api.gameitem", game=game))
             game_list.append(game_obj)
 
         body = BoardGameBuilder(
-            id=user.id,
             name=user.name,
             turnsPlayed=user.turnsPlayed,
             totalTime=user.totalTime,
@@ -125,29 +126,27 @@ class UserItem(Resource):
             raise Forbidden
 
         try:
-            validate(request.json, User.put_schema(),
+            validate(request.json, User.json_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
 
-        if "name" in request.json:
 
-            user_with_name = User.query.filter_by(name=request.json["name"]).first()
+        user_with_name = User.query.filter_by(name=request.json["name"])\
+                                   .first()
 
-            if user_with_name and user_with_name.id != user.id:
-                return "User with the same name already exists. No changes were done.", 400
+        if user_with_name and user_with_name.id != user.id:
+            return "User with the same name already exists. No changes were done.", 400
 
-            user.name = request.json["name"]
 
-        if "password" in request.json:
+        validation_result = User.validate_password(
+            request.json["password"])
 
-            validation_result = User.validate_password(
-                request.json["password"])
+        if validation_result is not None:
+            return validation_result
 
-            if validation_result is not None:
-                return validation_result
-
-            user.password = key_hash(request.json["password"])
+        user.name = request.json["name"]
+        user.password = key_hash(request.json["password"])
 
         db.session.commit()
 

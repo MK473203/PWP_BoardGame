@@ -56,7 +56,7 @@ class GameTypeCollection(Resource):
         """
 
         try:
-            validate(request.json, GameType.post_schema(),
+            validate(request.json, GameType.json_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
@@ -112,23 +112,20 @@ class GameTypeItem(Resource):
         """
 
         try:
-            validate(request.json, GameType.put_schema(),
+            validate(request.json, GameType.json_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
 
-        if "name" in request.json:
+        game_type_with_name = GameType.query.filter_by(name=request.json["name"])\
+                                            .first()
 
-            game_type_with_name = GameType.query.filter_by(
-                name=request.json["name"]).first()
+        if game_type_with_name and game_type_with_name.id != game_type.id:
+            return "Game type with the same name already exists. No changes were done.", 400
 
-            if game_type_with_name and game_type_with_name.id != game_type.id:
-                return "Game type with the same name already exists. No changes were done.", 400
+        game_type.name = request.json["name"].lower()
 
-            game_type.name = request.json["name"].lower()
-
-        if "defaultState" in request.json:
-            game_type.defaultState = request.json["defaultState"]
+        game_type.defaultState = request.json["defaultState"]
 
         db.session.commit()
 

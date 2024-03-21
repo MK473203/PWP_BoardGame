@@ -5,19 +5,15 @@ Utilities and helpers
 import hashlib
 import secrets
 
-from flask import request
+from flask import request, url_for
 from werkzeug.exceptions import Forbidden
 
 from app.models import User, Game, GameType
-from app.api import api
-
-from app.resources.game import GameCollection, GameItem
-from app.resources.game_type import GameTypeCollection, GameTypeItem
-from app.resources.user import UserCollection, UserItem
 
 def key_hash(key):
     """Used for api key and user password hashing"""
     return hashlib.sha256(key.encode()).digest()
+
 
 ADMIN_KEY = "3CK1fq9levikwyj5WxueFdtvDmNlKeiz7zK09erDXg8"
 ADMIN_KEY_HASH = key_hash(ADMIN_KEY)
@@ -141,86 +137,88 @@ class BoardGameBuilder(dict):
         Add the games-all control to the object
         """
         self.add_control("boardgame:games-all",
-                         api.url_for(GameCollection), method="GET")
+                         url_for("api.gamecollection"), method="GET")
 
     def add_control_all_users(self):
         """
         Add the users-all control to the object
         """
         self.add_control("boardgame:users-all",
-                         api.url_for(UserCollection), method="GET")
+                         url_for("api.usercollection"), method="GET")
 
     def add_control_all_game_types(self):
         """
         Add the gametypes-all control to the object
         """
-        self.add_control("boardgame:gametypes-all", api.url_for(GameTypeCollection), method="GET")
+        self.add_control("boardgame:gametypes-all",
+                         url_for("api.gametypecollection"), method="GET")
 
     def add_control_add_game(self):
         """
         Add the add-game control to the object
         """
-        self.add_control("boardgame:add-game", api.url_for(GameCollection), method="POST",
-                         encoding="json", schema=Game.json_schema())
+        self.add_control("boardgame:add-game", url_for("api.gamecollection"), method="POST",
+                         encoding="json", schema=Game.post_schema())
 
     def add_control_add_user(self):
         """
         Add the add-user control to the object
         """
-        self.add_control("boardgame:add-user", api.url_for(UserCollection), method="POST",
+        self.add_control("boardgame:add-user", url_for("api.usercollection"), method="POST",
                          encoding="json", schema=User.json_schema())
 
     def add_control_add_game_type(self):
         """
         Add the add-gametype control to the object
         """
-        self.add_control("boardgame:add-gametype", api.url_for(GameTypeCollection), method="POST",
+        self.add_control("boardgame:add-gametype", url_for("api.gametypecollection"), method="POST",
                          encoding="json", schema=GameType.json_schema())
 
-    def add_control_delete_game(self, game_id):
+    def add_control_delete_game(self, game):
         """
         Add the GameItem delete control to the object
         """
         self.add_control("boardgame:delete",
-                         api.url_for(GameItem, game_id=game_id), method="DELETE")
+                         url_for("api.gameitem", game=game), method="DELETE")
 
     def add_control_delete_user(self, user):
         """
         Add the UserItem delete control to the object
         """
         self.add_control("boardgame:delete",
-                         api.url_for(UserItem, user=user), method="DELETE")
+                         url_for("api.useritem", user=user), method="DELETE")
 
     def add_control_delete_game_type(self, game_type):
         """
         Add the GameTypeItem delete control to the object
         """
         self.add_control("boardgame:delete",
-                         api.url_for(GameTypeItem, game_type=game_type), method="DELETE")
+                         url_for("api.gametypeitem", game_type=game_type), method="DELETE")
 
-    def add_control_edit_game(self, game_id):
+    def add_control_edit_game(self, game):
         """
         Add the GameItem edit control to the object
         """
-        self.add_control("edit", api.url_for(GameItem, game_id=game_id), method="PUT",
-                         encoding="json", schema=Game.admin_schema())
+        self.add_control("edit", url_for("api.gameitem", game=game), method="PUT",
+                         encoding="json", schema=Game.put_schema())
 
     def add_control_edit_user(self, user):
         """
         Add the UserItem edit control to the object
         """
-        self.add_control("edit", api.url_for(UserItem, user=user), method="PUT", encoding="json")
+        self.add_control("edit", url_for(
+            "api.useritem", user=user), method="PUT", encoding="json")
 
     def add_control_edit_game_type(self, game_type):
         """
         Add the GameTypeItem edit control to the object
         """
-        self.add_control("edit", api.url_for(GameTypeItem, game_type=game_type), method="PUT",
+        self.add_control("edit", url_for("api.gametypeitem", game_type=game_type), method="PUT",
                          encoding="json")
 
-    def add_control_make_move(self, game_id):
+    def add_control_make_move(self, game):
         """
         Add the make-move control to the object
         """
-        self.add_control("boardgame:make-move", api.url_for(GameItem, game_id=game_id),
-                         method="PUT", encoding="json", schema=Game.move_schema())
+        self.add_control("boardgame:make-move", url_for("api.movecollection", game=game),
+                         method="POST", encoding="json", schema=Game.move_schema())
