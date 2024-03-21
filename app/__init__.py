@@ -4,6 +4,7 @@ import click
 from flask import Flask
 from flask_caching import Cache
 from flask_sqlalchemy import SQLAlchemy
+from flasgger import Swagger, swag_from
 
 db = SQLAlchemy()
 cache = Cache()
@@ -29,6 +30,14 @@ def create_app(test_config=None):
     """Create app instance"""
 
     app = Flask(__name__, instance_relative_config=True)
+
+    app.config["SWAGGER"] = {
+        "title": "PWP BoardGame API",
+        "openapi": "3.0.3",
+        "uiversion": 3,
+        "doc_dir": "./doc",
+    }
+    swagger = Swagger(app, template_file="doc/boardgame.yml")
 
     app.config.from_mapping(
         SECRET_KEY="dev",

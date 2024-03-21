@@ -1,0 +1,20 @@
+---
+openapi: 3.0.3
+servers:
+- url: /api
+components:
+info:
+  title: PWP BoardGame
+  version: 0.0.1
+  description: |
+    This is an API used in the Programmable Web Project course.
+    It stores data about games and the users who have played them.
+  termsOfService: http://totally.not.placehold.er/
+  contact:
+    url: http://totally.not.placehold.er/
+    email: realaddress@email.net
+    name: Boardgame group
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+paths:
