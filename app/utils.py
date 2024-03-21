@@ -215,6 +215,13 @@ class BoardGameBuilder(dict):
         """
         self.add_control("edit", url_for("api.gametypeitem", game_type=game_type), method="PUT",
                          encoding="json")
+        
+    def add_control_join_game(self, game):
+        """
+        Add the join-game control to the object
+        """
+        self.add_control("boardgame:join-game", url_for(
+            "api.joingame", game=game), method="POST")
 
     def add_control_make_move(self, game):
         """

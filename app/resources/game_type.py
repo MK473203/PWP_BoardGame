@@ -31,7 +31,6 @@ class GameTypeCollection(Resource):
 
         for game_type in game_types:
             game_type_obj = BoardGameBuilder(
-                id=game_type.id,
                 name=game_type.name,
                 defaultState=game_type.defaultState
             )
@@ -91,7 +90,6 @@ class GameTypeItem(Resource):
         """
 
         body = BoardGameBuilder(
-            id=game_type.id,
             name=game_type.name,
             defaultState=game_type.defaultState,
         )

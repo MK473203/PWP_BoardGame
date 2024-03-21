@@ -52,6 +52,10 @@ class GameCollection(Resource):
         body.add_board_game_namespace()
         body.add_control_add_game()
         body.add_control_all_users()
+        body.add_control_all_game_types()
+        for game_type in GameType.query.all():
+            body.add_control("boardgame:get-random",
+                             url_for("api.randomgame", game_type=game_type))
         return Response(json.dumps(body), 200, mimetype=MASON)
 
     @require_admin
@@ -124,6 +128,10 @@ class GameItem(Resource):
         )
         body.add_board_game_namespace()
         body.add_control_all_games()
+        body.add_control_join_game(game)
+        body.add_control_make_move(game)
+        body.add_control_edit_game(game)
+        body.add_control_delete_game(game)
 
         return Response(json.dumps(body), 200, mimetype=MASON)
 
@@ -185,7 +193,7 @@ class MoveCollection(Resource):
         body = BoardGameBuilder(
             moveHistory=str(game.moveHistory)
         )
-        body.add_control("self", url_for("api.gameitem", game=game))
+        body.add_control("up", url_for("api.gameitem", game=game))
 
         return Response(json.dumps(body), 200, mimetype=MASON)
 
@@ -273,19 +281,24 @@ class JoinGame(Resource):
 
     @require_login
     def post(self, game, **kwargs):
-        if game.currentPlayer is None:
+        """
+        Try to join a game instance. Returns an error if the game already has a player
+        """
+        if game.currentPlayer is None or game.currentPlayer == kwargs["login_user_id"]:
             game.currentPlayer = kwargs["login_user_id"]
             db.session.commit()
             body = BoardGameBuilder(ok="Ok")
-            body.add_control("self", url_for(
-                "api.joingame", game=game), method="POST")
+            body.add_board_game_namespace()
+            body.add_control_make_move(game)
             return Response(response=json.dumps(body),
                             status=200,
                             headers={"Location": url_for(
-                                "api.joingame", game=game)},
+                                "api.movecollection", game=game)},
                             mimetype=MASON)
         else:
             body = BoardGameBuilder(error="Game already has a player")
+            body.add_board_game_namespace()
+            body.add_control_all_games()
             return Response(response=json.dumps(body),
                             status=409,
                             mimetype=MASON)
@@ -344,8 +357,8 @@ class RandomGame(Resource):
             db.session.commit()
 
         body = BoardGameBuilder()
-        body.add_control("self", url_for(
-            "api.joingame", game=game), method="POST")
+        body.add_board_game_namespace()
+        body.add_control_join_game(game)
         return Response(response=json.dumps(body),
                         status=200,
                         headers={"Location": url_for(

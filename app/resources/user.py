@@ -17,7 +17,6 @@ from app.utils import key_hash, require_login, BoardGameBuilder, MASON
 class UserCollection(Resource):
     """Resource for handling user creation. Admins can also get a list of all users."""
 
-    # TODO: Add varying return values for admin / user with account / user without account
     @cache.cached(timeout=900)
     def get(self):
         """
