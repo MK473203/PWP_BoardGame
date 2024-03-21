@@ -229,7 +229,7 @@ class MoveCollection(Resource):
         if request.json["move"] == "":
             game.currentPlayer = None
             db.session.commit()
-            return Response("You have left the game", 200)
+            return Response(game.state + " result:" + str(game.result), 200)
 
         move_result = apply_move(
             request.json["move"], game.state, game_type)
