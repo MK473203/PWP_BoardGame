@@ -3,6 +3,9 @@ openapi: 3.0.3
 servers:
 - url: /api
 components:
+  parameters:
+  schemas:
+  securitySchemes:
 info:
   title: PWP BoardGame
   version: 0.0.1
@@ -18,3 +21,31 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
 paths:
+  /users/:
+    get:
+    post:
+  /users/{user}/:
+    get:
+    put:
+    delete:
+  /games/:
+    get:
+    post:
+  /games/{game}/:
+    get:
+    put:
+    delete:
+  /games/{game}/moves/:
+    get:
+    post:
+  /games/{game}/join/:
+    post:
+  /games/random/{game_type}/:
+    get:
+  /game_types/:
+    get:
+    post:
+  /game_types/{game_type}/:
+    get:
+    put:
+    delete:
