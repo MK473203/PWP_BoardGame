@@ -53,6 +53,10 @@ class GameCollection(Resource):
         body.add_board_game_namespace()
         body.add_control_add_game()
         body.add_control_all_users()
+        body.add_control_all_game_types()
+        for game_type in GameType.query.all():
+            body.add_control("boardgame:get-random",
+                             url_for("api.randomgame", game_type=game_type))
         return Response(json.dumps(body), 200, mimetype=MASON)
 
     @require_admin
@@ -148,6 +152,10 @@ class GameItem(Resource):
         )
         body.add_board_game_namespace()
         body.add_control_all_games()
+        body.add_control_join_game(game)
+        body.add_control_make_move(game)
+        body.add_control_edit_game(game)
+        body.add_control_delete_game(game)
 
         return Response(json.dumps(body), 200, mimetype=MASON)
 
@@ -155,6 +163,70 @@ class GameItem(Resource):
     def put(self, game_id, **kwargs):
         """
         Update game instance information. 
+<<<<<<< HEAD
+=======
+
+        Input: JSON with the field 'currentPlayer'
+        Output: 
+        """
+        try:
+            validate(request.json, Game.put_schema(),
+                     format_checker=Draft7Validator.FORMAT_CHECKER)
+        except ValidationError as e:
+            raise BadRequest(description=str(e)) from e
+
+        db_user = User.query.filter_by(
+            name=request.json["currentPlayer"]).first()
+        if db_user is None:
+            raise NotFound
+
+        game.currentPlayer = db_user.id
+        insert = GamePlayers.insert().values(gameId=game.id,
+                                             playerId=db_user.id,
+                                             team=None)
+        db.session.execute(insert)
+
+        # More options can be added if needed
+
+        db.session.commit()
+
+        return 200
+
+    @require_admin
+    def delete(self, game):
+        """Delete a game instance. Requires admin privileges.
+            Input: Id of desired game
+            Output:
+        """
+        db_game = Game.query.filter_by(id=game.id).first()
+        db.session.delete(db_game)
+        db.session.commit()
+        return 200
+
+
+class MoveCollection(Resource):
+    """
+    Resource for making moves in a game instance.
+    Also allows getting a game's move history.
+    """
+
+    def get(self, game):
+        """Get the move history of a given game instance
+            Input: uuid of the game in the address
+            Output: List of moves made in this game. Format depends on game type.
+        """
+
+        body = BoardGameBuilder(
+            moveHistory=str(game.moveHistory)
+        )
+        body.add_control("up", url_for("api.gameitem", game=game))
+
+        return Response(json.dumps(body), 200, mimetype=MASON)
+
+    @require_login
+    def post(self, game, **kwargs):
+        """
+>>>>>>> d66db4bc55245a7b4ed788080f702a759998fe9c
         The current player can make moves, after which the current player is set to none.
         Admins can update other information fields.
 
@@ -253,6 +325,7 @@ class GameItem(Resource):
 
             # More options can be added if needed
 
+<<<<<<< HEAD
             db.session.commit()
 
             return 200
@@ -274,6 +347,50 @@ class GameItem(Resource):
             return 200
         else:
             return Response("Specified game id not found", 404)
+=======
+        if game.moveHistory is not None:
+            move_history_list = pickle.loads(game.moveHistory)
+
+        move_history_list.append(request.json["move"])
+
+        game.moveHistory = pickle.dumps(move_history_list)
+        game.currentPlayer = None
+        game.state = move_result[0]
+        game.result = move_result[1]
+
+        db.session.commit()
+        return Response(game.state + " result:" + str(move_result[1]), 200)
+
+
+class JoinGame(Resource):
+    """
+    Resource for joining an empty game
+    """
+
+    @require_login
+    def post(self, game, **kwargs):
+        """
+        Try to join a game instance. Returns an error if the game already has a player
+        """
+        if game.currentPlayer is None or game.currentPlayer == kwargs["login_user_id"]:
+            game.currentPlayer = kwargs["login_user_id"]
+            db.session.commit()
+            body = BoardGameBuilder(ok="Ok")
+            body.add_board_game_namespace()
+            body.add_control_make_move(game)
+            return Response(response=json.dumps(body),
+                            status=200,
+                            headers={"Location": url_for(
+                                "api.movecollection", game=game)},
+                            mimetype=MASON)
+        else:
+            body = BoardGameBuilder(error="Game already has a player")
+            body.add_board_game_namespace()
+            body.add_control_all_games()
+            return Response(response=json.dumps(body),
+                            status=409,
+                            mimetype=MASON)
+>>>>>>> d66db4bc55245a7b4ed788080f702a759998fe9c
 
 
 class RandomGame(Resource):
@@ -339,5 +456,15 @@ class RandomGame(Resource):
             game_id = game.id
 
         body = BoardGameBuilder()
+<<<<<<< HEAD
         body.add_control("self", url_for("api.gameitem", game_id=game_id))
         return Response(json.dumps(body), 200, mimetype=MASON)
+=======
+        body.add_board_game_namespace()
+        body.add_control_join_game(game)
+        return Response(response=json.dumps(body),
+                        status=200,
+                        headers={"Location": url_for(
+                            "api.joingame", game=game)},
+                        mimetype=MASON)
+>>>>>>> d66db4bc55245a7b4ed788080f702a759998fe9c
