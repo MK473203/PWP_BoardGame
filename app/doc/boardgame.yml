@@ -133,11 +133,52 @@ paths:
                     self:
                       href: /api/users/user3
                   name: user3
-    post:
   /users/{user}/:
     get:
-    put:
-    delete:
+      description: Get an user's information. Requires an user to be logged in.
+      responses:
+        '200':
+          description: Info successfully returned
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:delete:
+                    href: /api/users/user1
+                    method: DELETE
+                  boardgame:users-all:
+                    href: /api/users/
+                    method: GET
+                  edit:
+                    encoding: json
+                    href: /api/users/user1
+                    method: PUT
+                    schema:
+                      properties:
+                        name:
+                          maxLength: 64
+                          minLength: 1
+                          type: string
+                        password:
+                          type: string
+                      required:
+                      - name
+                      - password
+                      type: object
+                games:
+                - '@controls':
+                    self:
+                      href: /api/games/4b569771967645a6978dc71904abc470
+                  id: 4b569771967645a6978dc71904abc470
+                  result: -1
+                  type: 1
+                name: user1
+                totalTime: 0
+                turnsPlayed: 0
+        '403':
+          description: Permission denied (you need to be logged in)
+        '404':
+          description: User not found
   /games/:
     get:
       description: Get a list of all games
@@ -181,7 +222,6 @@ paths:
                   result: -1
                   state: 1---------
                   type: tictactoe
-    post:
   /games/{game}/:
     get:
       description: Get information about a game instance
@@ -221,8 +261,6 @@ paths:
                         currentPlayer:
         '404':
           description: Game instance not found
-    put:
-    delete:
   /games/{game}/moves/:
     get:
       description: get the move history of a given game instance
@@ -237,15 +275,144 @@ paths:
                 moveHistory: None
         '404':
           description: Game instance not found
-    post:
   /games/{game}/join/:
     post:
+      description: Try to join a game instance. Returns an error if the game already has a player
+      responses:
+        '200':
+          description: Game joined succesfully
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:make-move:
+                    encoding: json
+                    href: /api/games/4b569771967645a6978dc71904abc470/moves
+                    method: POST
+                    schema:
+                      properties:
+                        moveTime:
+                          type: integer
+                      required:
+                      - move
+                      - moveTime
+                      type: object
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
+                ok: Ok
+        '404':
+          description: Game not found
+        '409':
+          description: Game already has a player
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:games-all:
+                    href: /api/games/
+                    method: GET
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
+                error: Game already has a player
   /games/random/{game_type}/:
     get:
+      description: Redirects to the id of an random game with no current player. Should not be spammed!!! Creates a bunch of new games.
+      responses:
+        '200':
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:join-game:
+                    href: /api/games/69a25cc03b314b5ca2d56fc8f80ffaeb/join
+                    method: POST
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
+        '404':
+          description: Game type not found
   /game_types/:
     get:
-    post:
+      description: Get a list of all game types.
+      responses:
+        '200':
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:add-gametype:
+                    encoding: json
+                    href: /api/game_types/
+                    method: POST
+                    schema:
+                      properties:
+                        defaultState:
+                          maxLength: 256
+                          type: string
+                        name:
+                          maxLength: 64
+                          minLength: 1
+                          type: string
+                      required:
+                      - name
+                      - defaultState
+                      type: object
+                  boardgame:games-all:
+                    href: /api/games/
+                    method: GET
+                  boardgame:users-all:
+                    href: /api/users/
+                    method: GET
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
+                items:
+                - '@controls':
+                    self:
+                      href: /api/game_types/tictactoe
+                  defaultState: 1---------
+                  name: tictactoe
   /game_types/{game_type}/:
     get:
-    put:
-    delete:
+      description: Get a game_type's information
+      responses:
+        '200':
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:delete:
+                    href: /api/game_types/tictactoe
+                    method: DELETE
+                  boardgame:gametypes-all:
+                    href: /api/game_types/
+                    method: GET
+                  boardgame:get-random:
+                    href: /api/games/random/tictactoe
+                    method: GET
+                  edit:
+                    encoding: json
+                    href: /api/game_types/tictactoe
+                    method: PUT
+                    schema:
+                      properties:
+                        defaultState:
+                          maxLength: 256
+                          type: string
+                        name:
+                          maxLength: 64
+                          minLength: 1
+                          type: string
+                      required:
+                      - name
+                      - defaultState
+                      type: object
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
+                defaultState: 1---------
+                name: tictactoe
+        '404':
+          description: Game type not found

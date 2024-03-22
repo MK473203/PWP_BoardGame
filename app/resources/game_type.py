@@ -132,6 +132,8 @@ class GameTypeItem(Resource):
             Output: Response with a header to the location of the updated game type
         ---
         description: Update a game type's information. Requires admin privileges
+        parameters:
+        - $ref: '#/components/schemas/gametype
         requestBody:
             description: JSON document that contains a new gametype
             content:
@@ -188,6 +190,8 @@ class GameTypeItem(Resource):
             Output: 
         ---
         description: Delete a game type. Requires admin privileges.
+        parameters:
+        - $ref: '#/components/schemas/gametype
         responses:
             '200':
                 description: The gametype was removed successfully

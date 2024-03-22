@@ -138,28 +138,30 @@ class UserItem(Resource):
         """Update user information. Requires user authentication
             Input: Username and json with the fields 'name' and/or 'password'
             Output: Response with a header to the location of the updated user
-        ---
-        description: Update user information. Requires user authentication
-        requestBody:
-            description: JSON document that contains a new current player
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/PutGame'
-                    example:
-                        currentPlayer: user2
-        responses:
-            '200':
-                description: The user was modified successfully
-                    headers:
-                        Location:
-                            description: URI of the modified user
-                            schema:
-                                type: string
-            '400':
-                description: Invalid Json
-            '403':
-                description: Permission denied
+            ---
+            description: Update user information. Requires user authentication
+            parameters:
+            - $ref: '#/components/schemas/user
+            requestBody:
+                description: JSON document that contains a new current player
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PutGame'
+                        example:
+                            currentPlayer: user2
+            responses:
+                '200':
+                    description: The user was modified successfully
+                        headers:
+                            Location:
+                                description: URI of the modified user
+                                schema:
+                                    -type: string
+                '400':
+                    description: Invalid Json
+                '403':
+                    description: Permission denied
         """
 
         if kwargs["login_user_id"] != user.id:
@@ -202,6 +204,8 @@ class UserItem(Resource):
             Output: 
             ---
             description: Delete an user. Requires user authentication
+            parameters:
+            - $ref: '#/components/schemas/user
             responses:
                 '200':
                     description: The user was removed successfully
