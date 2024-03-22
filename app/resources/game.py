@@ -27,7 +27,7 @@ class GameCollection(Resource):
         """Get a list of all games
             Input:
             Output: A list of all games
-            
+
         """
         games = []
         for game in Game.query.all():
@@ -84,7 +84,7 @@ class GameCollection(Resource):
                     description: This GameType does not exist
                 '415':
                     description: Request content type must be JSON
-            
+
         """
         if not request.is_json:
             return "Request content type must be JSON", 415
@@ -129,8 +129,10 @@ class GameItem(Resource):
 
         Input: id of the game in the address
         Output: Dictionary of all relevant information on the specified game
-        
+
         """
+        if game is None:
+            raise NotFound
 
         current_player = User.query.filter_by(id=game.currentPlayer).first()
         if current_player:
@@ -146,9 +148,13 @@ class GameItem(Resource):
             result=game.result,
             state=game.state,
             currentPlayer=current_player,
-            moveHistory=str(game.moveHistory),
+            moveHistory="",
             players=players
         )
+
+        if game.moveHistory is not None:
+            body["moveHistory"] = str(pickle.loads(game.moveHistory))
+
         body.add_board_game_namespace()
         body.add_control_all_games()
         body.add_control_join_game(game)
@@ -183,6 +189,9 @@ class GameItem(Resource):
             '404':
                 description: Given user wasn't found
         """
+        if game is None:
+            raise NotFound
+
         try:
             validate(request.json, Game.put_schema(),
                      format_checker=Draft7Validator.FORMAT_CHECKER)
@@ -217,6 +226,9 @@ class GameItem(Resource):
                 '200':
                     description: The game instance was removed successfully
         """
+        if game is None:
+            raise NotFound
+
         db_game = Game.query.filter_by(id=game.id).first()
         db.session.delete(db_game)
         db.session.commit()
@@ -233,12 +245,17 @@ class MoveCollection(Resource):
         """Get the move history of a given game instance
             Input: uuid of the game in the address
             Output: List of moves made in this game. Format depends on game type.
-            
+
         """
 
-        body = BoardGameBuilder(
-            moveHistory=str(game.moveHistory)
-        )
+        if game is None:
+            raise NotFound
+
+        body = BoardGameBuilder(moveHistory="")
+
+        if game.moveHistory is not None:
+            body["moveHistory"] = str(pickle.loads(game.moveHistory))
+
         body.add_control("up", url_for("api.gameitem", game=game))
 
         return Response(json.dumps(body), 200, mimetype=MASON)
@@ -285,6 +302,8 @@ class MoveCollection(Resource):
             '415':
                 description: Request content type must be JSON
         """
+        if game is None:
+            raise NotFound
 
         game_type = GameType.query.filter_by(id=game.type).first().name
 
@@ -355,8 +374,11 @@ class JoinGame(Resource):
     def post(self, game, **kwargs):
         """
         Try to join a game instance. Returns an error if the game already has a player
-        
+
         """
+        if game is None:
+            raise NotFound
+
         if game.currentPlayer is None or game.currentPlayer == kwargs["login_user_id"]:
             game.currentPlayer = kwargs["login_user_id"]
             db.session.commit()
@@ -388,7 +410,7 @@ class RandomGame(Resource):
         Should not be spammed!!! Creates a bunch of new games.
             Input: Game type in the address
             Output: Redirect to the url of chosen/created game
-        
+
         """
         empty_games = Game.query.filter_by(
             type=game_type.id, currentPlayer=None, result=-1).all()
@@ -416,7 +438,6 @@ class RandomGame(Resource):
             else:
                 available_games.append(game)
 
-        user = User.query.get(user_id)
         game = None
         if available_games:
             # At least 1 available game was found

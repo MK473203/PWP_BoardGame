@@ -99,7 +99,7 @@ class TestGameItem():
         assert body["result"] == -1
         assert body["state"] == "1---------"
         assert body["currentPlayer"] == "testuser_1"
-        assert body["moveHistory"] == "None"
+        assert body["moveHistory"] == ""
         assert body["players"] == []
 
     def test_put(self, client, game_url):

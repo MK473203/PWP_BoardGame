@@ -52,8 +52,6 @@ class GameConverter(BaseConverter):
 
     def to_python(self, value):
         db_game = Game.query.filter_by(uuid=value).first()
-        if db_game is None:
-            raise NotFound
         return db_game
 
     def to_url(self, value):
@@ -219,7 +217,7 @@ def init_db_command():  # pragma: no cover
 
 
 @click.command("populate-db")
-def populate_db_command(): # pragma: no cover
+def populate_db_command():  # pragma: no cover
     """
     Initializes a small example database.
 
