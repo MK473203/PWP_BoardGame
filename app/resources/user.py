@@ -117,7 +117,7 @@ class UserItem(Resource):
         for game in user.games:
             game_obj = BoardGameBuilder(
                 id=game.uuid, type=game.type, result=game.result)
-            game_obj.add_control("self", url_for(
+            game_obj.add_control("boardgame:game", url_for(
                 "api.gameitem", game=game))
             game_list.append(game_obj)
 
@@ -127,6 +127,7 @@ class UserItem(Resource):
             totalTime=user.totalTime,
             games=game_list
         )
+        body.add_board_game_namespace()
         body.add_control_all_users()
         body.add_control_delete_user(user)
         body.add_control_edit_user(user)

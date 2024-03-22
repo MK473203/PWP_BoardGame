@@ -140,7 +140,10 @@ class GameItem(Resource):
 
         players = []
         for p in game.players:
-            players.append(p.name)
+            player = BoardGameBuilder(username=p.name)
+            player.add_control("boardgame:player", url_for(
+                "api.useritem", user=p))
+            players.append(player)
 
         body = BoardGameBuilder(
             id=game.uuid,
