@@ -203,7 +203,7 @@ class Game(db.Model):
 
 
 @click.command("init-db")
-def init_db_command():
+def init_db_command():  # pragma: no cover
     """
     Initializes an empty database file.
 
@@ -219,7 +219,7 @@ def init_db_command():
 
 
 @click.command("populate-db")
-def populate_db_command():
+def populate_db_command(): # pragma: no cover
     """
     Initializes a small example database.
 

@@ -11,7 +11,7 @@ cache = Cache()
 
 
 @click.command("clear-cache")
-def clear_cache_command():
+def clear_cache_command():  # pragma: no cover
     """
     Clears the cache
 

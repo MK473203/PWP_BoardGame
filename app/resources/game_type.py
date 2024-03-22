@@ -116,6 +116,8 @@ class GameTypeItem(Resource):
         )
         body.add_board_game_namespace()
         body.add_control_all_game_types()
+        body.add_control("boardgame:get-random", url_for(
+            "api.randomgame", game_type=game_type), method="GET")
         body.add_control_edit_game_type(game_type)
         body.add_control_delete_game_type(game_type)
 

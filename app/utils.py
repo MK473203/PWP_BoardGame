@@ -10,6 +10,7 @@ from werkzeug.exceptions import Forbidden
 
 from app.models import User, Game, GameType
 
+
 def key_hash(key):
     """Used for api key and user password hashing"""
     return hashlib.sha256(key.encode()).digest()
@@ -207,15 +208,15 @@ class BoardGameBuilder(dict):
         Add the UserItem edit control to the object
         """
         self.add_control("edit", url_for(
-            "api.useritem", user=user), method="PUT", encoding="json")
+            "api.useritem", user=user), method="PUT", encoding="json", schema=User.json_schema())
 
     def add_control_edit_game_type(self, game_type):
         """
         Add the GameTypeItem edit control to the object
         """
         self.add_control("edit", url_for("api.gametypeitem", game_type=game_type), method="PUT",
-                         encoding="json")
-        
+                         encoding="json", schema=GameType.json_schema())
+
     def add_control_join_game(self, game):
         """
         Add the join-game control to the object

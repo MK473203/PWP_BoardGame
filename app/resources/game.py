@@ -54,9 +54,6 @@ class GameCollection(Resource):
         body.add_control_add_game()
         body.add_control_all_users()
         body.add_control_all_game_types()
-        for game_type in GameType.query.all():
-            body.add_control("boardgame:get-random",
-                             url_for("api.randomgame", game_type=game_type))
         return Response(json.dumps(body), 200, mimetype=MASON)
 
     @require_admin
