@@ -4,7 +4,72 @@ servers:
 - url: /api
 components:
   parameters:
+    user:
+      description: Selected User
+      in: path
+      name: user
+      required: true
+      schema:
+        type: string
+    game:
+      description: Selected Game
+      in: path
+      name: game
+      required: true
+      schema:
+        type: string
+    gametype:
+      description: Selected GameType
+      in: path
+      name: game
+      required: true
+      schema:
+        type: string
   schemas:
+    User:
+      properties:
+        id:
+          description: User id, unique
+          type: number
+          format: int
+        name:
+          description: User name, unique
+          type: string
+        password:
+          description: User password
+          type: string
+      required:
+      - id
+      - name
+      - password
+      type: object
+    Game:
+      properties:
+        id:
+          description: Game id, unique
+          type: number
+          format: int
+        type:
+          description: Game type
+          type: number
+          format: int
+      required:
+      - id
+      - type
+      type: object
+    GameType:
+      properties:
+        id:
+          description: GameType id, unique
+          type: number
+          format: int
+        name:
+          description: Game name, unique
+          type: string
+      required:
+      - id
+      - name
+      type: object
   securitySchemes:
 info:
   title: PWP BoardGame
