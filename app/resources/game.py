@@ -27,7 +27,7 @@ class GameCollection(Resource):
         """Get a list of all games
             Input:
             Output: A list of all games
-            ---
+            
         """
         games = []
         for game in Game.query.all():
@@ -132,7 +132,7 @@ class GameItem(Resource):
 
         Input: id of the game in the address
         Output: Dictionary of all relevant information on the specified game
-        ---
+        
         """
 
         current_player = User.query.filter_by(id=game.currentPlayer).first()
@@ -236,7 +236,7 @@ class MoveCollection(Resource):
         """Get the move history of a given game instance
             Input: uuid of the game in the address
             Output: List of moves made in this game. Format depends on game type.
-            ---
+            
         """
 
         body = BoardGameBuilder(
@@ -358,7 +358,7 @@ class JoinGame(Resource):
     def post(self, game, **kwargs):
         """
         Try to join a game instance. Returns an error if the game already has a player
-        ---
+        
         """
         if game.currentPlayer is None or game.currentPlayer == kwargs["login_user_id"]:
             game.currentPlayer = kwargs["login_user_id"]
@@ -391,7 +391,7 @@ class RandomGame(Resource):
         Should not be spammed!!! Creates a bunch of new games.
             Input: Game type in the address
             Output: Redirect to the url of chosen/created game
-        ---
+        
         """
         empty_games = Game.query.filter_by(
             type=game_type.id, currentPlayer=None, result=-1).all()

@@ -52,6 +52,27 @@ class GameTypeCollection(Resource):
             Input: json with the fields 'name' and 'defaultState'
             
             Output: Response with a header to the location of the new game type
+            ---
+            description: Create a new game type
+            requestBody:
+                description: JSON document that contains basic data for a new game type
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GameType'
+                        example:
+                            name: tictactoe
+                            defaultState: 1---------
+            responses:
+                '201':
+                    description: The game type was created successfully
+                    headers:
+                        Location:
+                            description: URI of the new gametype
+                            schema:
+                                type: string
+                '400':
+                    description: Invalid Json
         """
 
         try:
@@ -107,6 +128,27 @@ class GameTypeItem(Resource):
             Input: Game_type in the address and json with the fields 'name' and/or 'defaultState'
             
             Output: Response with a header to the location of the updated game type
+        ---
+        description: Update a game type's information. Requires admin privileges
+        requestBody:
+            description: JSON document that contains a new gametype
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/GameType'
+                    example:
+                        name: tictactoe
+                        defaultState: 1---------
+        responses:
+            '200':
+                description: The game type was modified successfully
+                    headers:
+                        Location:
+                            description: URI of the modified game type
+                            schema:
+                                type: string
+            '400':
+                description: Invalid Json
         """
 
         try:
@@ -142,6 +184,13 @@ class GameTypeItem(Resource):
             Input: Game type in the address
             
             Output: 
+        ---
+        description: Delete a game type. Requires admin privileges.
+        responses:
+            '200':
+                description: The gametype was removed successfully
+            '403':
+                description: Permission denied
         """
 
         db_game_type = GameType.query.filter_by(id=game_type.id).first()

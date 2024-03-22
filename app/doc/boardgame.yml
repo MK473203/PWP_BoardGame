@@ -23,6 +23,51 @@ info:
 paths:
   /users/:
     get:
+      description: Get a list of all users. User passwords not included
+      responses:
+        '200':
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:add-user:
+                    encoding: json
+                    href: /api/users/
+                    method: POST
+                    schema:
+                      properties:
+                        name:
+                          maxLength: 64
+                          minLength: 1
+                          type: string
+                        password:
+                          type: string
+                      required:
+                      - name
+                      - password
+                      type: object
+                  boardgame:games-all:
+                    href: /api/games/
+                    method: GET
+                  boardgame:gametypes-all:
+                    href: /api/game_types/
+                    method: GET
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
+                items:
+                - '@controls':
+                    self:
+                      href: /api/users/user1
+                  name: user1
+                - '@controls':
+                    self:
+                      href: /api/users/user2
+                  name: user2
+                - '@controls':
+                    self:
+                      href: /api/users/user3
+                  name: user3
     post:
   /users/{user}/:
     get:
@@ -30,13 +75,103 @@ paths:
     delete:
   /games/:
     get:
+      description: Get a list of all games
+      responses:
+        '200':
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:add-game:
+                    encoding: json
+                    href: /api/games/
+                    method: POST
+                    schema:
+                      properties:
+                        type:
+                          type: string
+                        user:
+                          type: string
+                      required:
+                      - type
+                      - user
+                      type: object
+                  boardgame:gametypes-all:
+                    href: /api/game_types/
+                    method: GET
+                  boardgame:get-random:
+                    href: /api/games/random/tictactoe
+                  boardgame:users-all:
+                    href: /api/users/
+                    method: GET
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
+                items:
+                - '@controls':
+                    self:
+                      href: /api/games/15bd5a922e1b48ef9411b0d357660b73
+                  currentPlayer: user1
+                  id: 15bd5a922e1b48ef9411b0d357660b73
+                  result: -1
+                  state: 1---------
+                  type: tictactoe
     post:
   /games/{game}/:
     get:
+      description: Get information about a game instance
+      responses:
+        '200':
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  boardgame:delete:
+                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73
+                    method: DELETE
+                  boardgame:games-all:
+                    href: /api/games/
+                    method: GET
+                  boardgame:join-game:
+                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73/join
+                    method: POST
+                  boardgame:make-move:
+                    encoding: json
+                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73/moves
+                    method: POST
+                    schema:
+                      properties:
+                        moveTime:
+                          type: integer
+                      required:
+                      - move
+                      - moveTime
+                      type: object
+                  edit:
+                    encoding: json
+                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73
+                    method: PUT
+                    schema:
+                      properties:
+                        currentPlayer:
+        '404':
+          description: Game instance not found
     put:
     delete:
   /games/{game}/moves/:
     get:
+      description: get the move history of a given game instance
+      responses:
+        '200':
+          content:
+            application/vnd.mason+json:
+              example:
+                '@controls':
+                  up:
+                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73
+                moveHistory: None
+        '404':
+          description: Game instance not found
     post:
   /games/{game}/join/:
     post:

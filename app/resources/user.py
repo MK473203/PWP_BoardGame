@@ -24,7 +24,7 @@ class UserCollection(Resource):
         User passwords not included.
         Input:
         Output: A list of all users
-        ---
+        
         """
 
         user_list = []
