@@ -369,7 +369,7 @@ class JoinGame(Resource):
             return Response(response=json.dumps(body),
                             status=200,
                             headers={"Location": url_for(
-                                "api.movecollection", game=game)},
+                                "api.gameitem", game=game)},
                             mimetype=MASON)
         else:
             body = BoardGameBuilder(error="Game already has a player")
@@ -439,5 +439,5 @@ class RandomGame(Resource):
         return Response(response=json.dumps(body),
                         status=200,
                         headers={"Location": url_for(
-                            "api.joingame", game=game)},
+                            "api.gameitem", game=game)},
                         mimetype=MASON)

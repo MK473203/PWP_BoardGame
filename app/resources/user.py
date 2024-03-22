@@ -113,9 +113,6 @@ class UserItem(Resource):
             Output: Dictionary of all relevant information on the specified user
         """
 
-        if kwargs["login_user_id"] != user.id:
-            raise Forbidden
-
         game_list = []
         for game in user.games:
             game_obj = BoardGameBuilder(

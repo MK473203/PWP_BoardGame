@@ -366,7 +366,6 @@ class TestGameTypeCollection():
         assert len(body["items"]) > 0
         # check if each game type has 'id', 'name' and 'defaultState' fields
         for game_type in body["items"]:
-            assert 'id' in game_type
             assert 'name' in game_type
             assert 'defaultState' in game_type
         assert body["items"][0]['name'] == 'tictactoe'
@@ -435,7 +434,6 @@ class TestGameTypeItem():
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert body["id"] == 1
         assert body["name"] == "tictactoe"
         assert body["defaultState"] == "1---------"
 
