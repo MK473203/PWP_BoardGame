@@ -142,7 +142,7 @@ class UserItem(Resource):
             ---
             description: Update user information. Requires user authentication
             parameters:
-            - $ref: '#/components/schemas/user
+            - $ref: '#/components/schemas/user'
             requestBody:
                 description: JSON document that contains a new current player
                 content:
@@ -154,7 +154,7 @@ class UserItem(Resource):
             responses:
                 '200':
                     description: The user was modified successfully
-                        headers:
+                    headers:
                             Location:
                                 description: URI of the modified user
                                 schema:
@@ -206,7 +206,7 @@ class UserItem(Resource):
             ---
             description: Delete an user. Requires user authentication
             parameters:
-            - $ref: '#/components/schemas/user
+            - $ref: '#/components/schemas/user'
             responses:
                 '200':
                     description: The user was removed successfully

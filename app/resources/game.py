@@ -177,7 +177,7 @@ class GameItem(Resource):
         ---
         description: Update game instance information
         parameters:
-        - $ref: '#/components/schemas/game
+        - $ref: '#/components/schemas/game'
         requestBody:
             description: JSON document that contains a new current player
             content:
@@ -228,7 +228,7 @@ class GameItem(Resource):
             ---
             description: Delete the game instance Admin required
             parameters:
-            - $ref: '#/components/schemas/game
+            - $ref: '#/components/schemas/game'
             responses:
                 '200':
                     description: The game instance was removed successfully
@@ -285,7 +285,7 @@ class MoveCollection(Resource):
         ---
         description: The current player can make moves, after which the current player is set to none.
         parameters:
-        - $ref: '#/components/schemas/game
+        - $ref: '#/components/schemas/game'
         requestBody:
             description: JSON document that contains the next move and movetime of the move. Example move is for tictactoe.
             content:

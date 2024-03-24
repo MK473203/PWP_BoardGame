@@ -133,6 +133,27 @@ paths:
                     self:
                       href: /api/users/user3
                   name: user3
+    post: 
+      description: Create a new user
+      requestBody:
+          description: JSON document that contains basic data for a new user
+          content:
+              application/json:
+                  schema:
+                      $ref: '#/components/schemas/User'
+                  example:
+                      name: user1
+                      password: thisismysupersecretpassword
+      responses:
+          '201':
+              description: The user was created successfully
+              headers:
+                  Location:
+                      description: URI of the new user
+                      schema:
+                          type: string
+          '400':
+              description: Invalid Json
   /users/{user}/:
     get:
       description: Get an user's information. Requires an user to be logged in.
@@ -179,6 +200,39 @@ paths:
           description: Permission denied (you need to be logged in)
         '404':
           description: User not found
+    put:
+      description: Update user information. Requires user authentication
+      parameters:
+      - $ref: '#/components/schemas/user'
+      requestBody:
+          description: JSON document that contains a new current player
+          content:
+              application/json:
+                  schema:
+                      $ref: '#/components/schemas/PutGame'
+                  example:
+                      currentPlayer: user2
+      responses:
+          '200':
+              description: The user was modified successfully
+              headers:
+                      Location:
+                          description: URI of the modified user
+                          schema:
+                              -type: string
+          '400':
+              description: Invalid Json
+          '403':
+              description: Permission denied
+    delete:
+      description: Delete an user. Requires user authentication
+      parameters:
+      - $ref: '#/components/schemas/user'
+      responses:
+          '200':
+              description: The user was removed successfully
+          '403':
+              description: Permission denied
   /games/:
     get:
       description: Get a list of all games
@@ -222,6 +276,29 @@ paths:
                   result: -1
                   state: 1---------
                   type: tictactoe
+    post:
+      description: Create a new game instance
+      requestBody:
+          description: JSON document that contains basic data for a new game
+          content:
+              application/json:
+                  schema:
+                      $ref: '#/components/schemas/PostGame'
+                  example:
+                      type: tictactoe
+                      user: user1
+      responses:
+          '201':
+              description: The game instance was created successfully
+              headers:
+                  Location:
+                      description: URI of the new sensor
+                      schema:
+                          type: string
+          '409':
+              description: This GameType does not exist
+          '415':
+              description: Request content type must be JSON
   /games/{game}/:
     get:
       description: Get information about a game instance
@@ -261,6 +338,32 @@ paths:
                         currentPlayer:
         '404':
           description: Game instance not found
+    put:
+      description: Update game instance information
+      parameters:
+      - $ref: '#/components/schemas/game'
+      requestBody:
+          description: JSON document that contains a new current player
+          content:
+              application/json:
+                  schema:
+                      $ref: '#/components/schemas/PutGame'
+                  example:
+                      currentPlayer: user2
+      responses:
+          '200':
+              description: The game instance was modified successfully
+          '400':
+              description: Request body was not valid
+          '404':
+              description: Given user wasn't found
+    delete:
+      description: Delete the game instance Admin required
+      parameters:
+      - $ref: '#/components/schemas/game'
+      responses:
+          '200':
+              description: The game instance was removed successfully
   /games/{game}/moves/:
     get:
       description: get the move history of a given game instance
@@ -275,6 +378,32 @@ paths:
                 moveHistory: None
         '404':
           description: Game instance not found
+    post:
+      description: The current player can make moves, after which the current player is set to none.
+      requestBody:
+          description: JSON document that contains the next move and movetime of the move. Example move is for tictactoe.
+          content:
+              application/json:
+                  schema:
+                      $ref: '#/components/schemas/MoveGame'
+                  example:
+                      move: 4
+                      moveTime: 5
+      responses:
+          '200':
+              description: Move has been made succesfully new state returned. Example given with tictactoe
+              content:
+                  application/json:
+                      example: 
+                          -state: 2X--------
+          '400':
+              description: Invalid JSON
+          '403':
+              description: Must log in before making a move
+          '409':
+              description: This GameType does not exist
+          '415':
+              description: Request content type must be JSON
   /games/{game}/join/:
     post:
       description: Try to join a game instance. Returns an error if the game already has a player
@@ -316,7 +445,7 @@ paths:
                   boardgame:
                     name: /boardgame/
                 error: Game already has a player
-  /games/random/{game_type}/:
+  /games/random/{gametype}/:
     get:
       description: Redirects to the id of an random game with no current player. Should not be spammed!!! Creates a bunch of new games.
       responses:
@@ -374,7 +503,28 @@ paths:
                       href: /api/game_types/tictactoe
                   defaultState: 1---------
                   name: tictactoe
-  /game_types/{game_type}/:
+    post:
+      description: Create a new game type
+      requestBody:
+          description: JSON document that contains basic data for a new game type
+          content:
+              application/json:
+                  schema:
+                      $ref: '#/components/schemas/GameType'
+                  example:
+                      name: tictactoe
+                      defaultState: 1---------
+      responses:
+          '201':
+              description: The game type was created successfully
+              headers:
+                  Location:
+                      description: URI of the new gametype
+                      schema:
+                          type: string
+          '400':
+              description: Invalid Json
+  /game_types/{gametype}/:
     get:
       description: Get a game_type's information
       responses:
@@ -416,3 +566,34 @@ paths:
                 name: tictactoe
         '404':
           description: Game type not found
+    put:
+      description: Update a game type's information. Requires admin privileges
+      parameters:
+      requestBody:
+          description: JSON document that contains a new gametype
+          content:
+              application/json:
+                  schema:
+                    $ref: '#/components/schemas/GameType'
+                  example:
+                      name: tictactoe
+                      defaultState: 1---------
+      responses:
+          '200':
+            description: The game type was modified successfully
+            headers:
+              Location:
+                description: URI of the modified game type
+                schema:
+                  type: string
+          '400':
+              description: Invalid Json
+    delete:
+      description: Delete a game type. Requires admin privileges.
+      parameters:
+      - $ref: '#/components/schemas/gametype'
+      responses:
+          '200':
+              description: The gametype was removed successfully
+          '403':
+              description: Permission denied
