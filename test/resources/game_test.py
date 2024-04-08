@@ -4,6 +4,7 @@ from test.test_utils import TEST_KEY, client, game_url
 
 from werkzeug.datastructures import Headers
 
+
 class TestGameCollection():
     """Tests for the /api/games/ endpoint"""
 
@@ -87,7 +88,7 @@ class TestGameItem():
     def test_get(self, client, game_url):
         """Test GameItem GET"""
 
-        # Test non-existent game type
+        # Test non-existent game
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
 
@@ -163,7 +164,9 @@ class TestMoveCollection():
     }
 
     def test_get(self, client, game_url):
-        pass
+        game_url = game_url + "/moves"
+        resp = client.get(game_url)
+        assert resp.status_code == 200
 
     def test_post(self, client, game_url):
 

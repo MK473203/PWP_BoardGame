@@ -417,7 +417,6 @@ class RandomGame(Resource):
     def get(self, game_type, **kwargs):
         """
         Redirects to the id of an random game with no current player.
-        Should not be spammed!!! Creates a bunch of new games.
             Input: Game type in the address
             Output: Redirect to the url of chosen/created game
 
