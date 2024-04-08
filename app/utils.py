@@ -20,7 +20,8 @@ ADMIN_KEY = "3CK1fq9levikwyj5WxueFdtvDmNlKeiz7zK09erDXg8"
 ADMIN_KEY_HASH = key_hash(ADMIN_KEY)
 
 MASON = "application/vnd.mason+json"
-LINK_RELATIONS = "/boardgame/"
+PROFILES = "/profiles/"
+LINK_RELATIONS = "/link-relations/"
 
 
 def require_login(func):
@@ -132,6 +133,12 @@ class BoardGameBuilder(dict):
         Add the 'boardgame' namespace to the object
         """
         self.add_namespace("boardgame", LINK_RELATIONS)
+
+    def add_control_profiles(self, profile):
+        """
+        Add the 'profile' control to the object
+        """
+        self.add_control("profile", "/api" + PROFILES + profile + "/")
 
     def add_control_all_games(self):
         """

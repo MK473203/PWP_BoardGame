@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<title>BoardGame API custom link relations</title>
+
+<body>
+	<h2>boardgame:games-all</h2>
+	<p>
+		Leads to the collection resource of all game instances.
+	</p>
+	<h2>boardgame:users-all</h2>
+	<p>
+		Leads to the collection resource of all registered users.
+	</p>
+	<h2>boardgame:gametypes-all</h2>
+	<p>
+		Leads to the collection resource of all playable game types.
+	</p>
+	<h2>boardgame:add-game</h2>
+	<p>
+		Contains the URL and JSON schema used to create a new game instance. Requires admin authentication.
+	</p>
+	<h2>boardgame:add-user</h2>
+	<p>
+		Contains the URL and JSON schema used to create a new user.
+	</p>
+	<h2>boardgame:add-gametype</h2>
+	<p>
+		Contains the URL and JSON schema used to create a new game type. Requires admin authentication.
+	</p>
+	<h2>boardgame:get-random</h2>
+	<p>
+		Leads to a resource used for GETting a random empty game instance of a given game type.
+	</p>
+	<h2>boardgame:join-game</h2>
+	<p>
+		Leads to a resource used for setting the current user to be the current player of a given game instance.
+	</p>
+	<h2>boardgame:make-move</h2>
+	<p>
+		Contains instructions on how to make a move in a given game instance.
+	</p>
+	<h2>boardgame:delete</h2>
+	<p>
+		Used for deleting a game instance, user or game type. Required authentication varies.
+	</p>
+</body>
+
+</html>

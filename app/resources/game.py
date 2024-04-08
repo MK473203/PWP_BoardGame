@@ -159,6 +159,7 @@ class GameItem(Resource):
             body["moveHistory"] = str(pickle.loads(game.moveHistory))
 
         body.add_board_game_namespace()
+        body.add_control_profiles("game")
         body.add_control_all_games()
         body.add_control_join_game(game)
         body.add_control_make_move(game)

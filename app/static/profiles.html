@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<title>BoardGame API profiles</title>
+
+<body>
+	<h2>User</h2>
+	<p>
+		Represents an user in the system.
+	</p>
+	<h3>Attributes</h3>
+	<ul>
+		<li><b>name:</b> user name (string)</li>
+		<li><b>turnsPlayed:</b> total amount of turns across all games (integer)</li>
+		<li><b>totalTime:</b> time in seconds spent making turns across all games (integer)</li>
+		<li><b>games:</b> list of game instances the user has participated in (string)</li>
+	</ul>
+	<h2>Game type</h2>
+	<p>
+		Represents a playable game type in the system.
+	</p>
+	<h3>Attributes</h3>
+	<ul>
+		<li><b>name:</b> name of the game type (string)</li>
+		<li><b>defaultState:</b> the starting state for a specific game type (string)</li>
+	</ul>
+	<h2>Game</h2>
+	<p>
+		Represents a game instance in the system.
+	</p>
+	<h3>Attributes</h3>
+	<ul>
+		<li><b>id:</b> UUID used to identify game instances (string)</li>
+		<li><b>type:</b> the type of game of a given game instance (string)</li>
+		<li><b>result:</b> result of the game after the latest move:</li>
+		<ul>
+			<li>-1: game is not finished</li>
+			<li> 0: game ended in a draw</li>
+			<li> 1: team 1 won the game</li>
+			<li> 2: team 2 won the game</li>
+		</ul>
+		<li><b>state:</b> current state of the game instance. Format depends on the game type (string)</li>
+		<li><b>currentPlayer:</b> name of the player currently playing the game instance (string)</li>
+		<li><b>moveHistory:</b> list of moves made in the game instance. Format depends on the game type (string)</li>
+		<li><b>players:</b> list of users that have participated in the game instance (string)</li>
+	</ul>
+</body>
+
+</html>

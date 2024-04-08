@@ -22,7 +22,7 @@ class GameTypeCollection(Resource):
         """
         Get a list of all game types.
             Input:
-            
+
             Output: List of all game types
         """
 
@@ -34,7 +34,8 @@ class GameTypeCollection(Resource):
                 name=game_type.name,
                 defaultState=game_type.defaultState
             )
-            game_type_obj.add_control("self", url_for("api.gametypeitem", game_type=game_type))
+            game_type_obj.add_control("self", url_for(
+                "api.gametypeitem", game_type=game_type))
             game_type_list.append(game_type_obj)
 
         body = BoardGameBuilder(items=game_type_list)
@@ -50,7 +51,7 @@ class GameTypeCollection(Resource):
         """
         Create a new game type
             Input: json with the fields 'name' and 'defaultState'
-            
+
             Output: Response with a header to the location of the new game type
             ---
             description: Create a new game type
@@ -94,7 +95,8 @@ class GameTypeCollection(Resource):
 
         return Response(
             status=201,
-            headers={"Location":url_for("api.gametypeitem", game_type=game_type)}
+            headers={"Location": url_for(
+                "api.gametypeitem", game_type=game_type)}
         )
 
 
@@ -106,7 +108,7 @@ class GameTypeItem(Resource):
         """
         Get a game_type's information
             Input: Game_type name in the address
-            
+
             Output: Dictionary with all relevant information on the specified game type
         """
 
@@ -115,6 +117,7 @@ class GameTypeItem(Resource):
             defaultState=game_type.defaultState,
         )
         body.add_board_game_namespace()
+        body.add_control_profiles("gametype")
         body.add_control_all_game_types()
         body.add_control("boardgame:get-random", url_for(
             "api.randomgame", game_type=game_type), method="GET")
@@ -128,7 +131,7 @@ class GameTypeItem(Resource):
         """
         Update a game type's information. Requires admin privileges
             Input: Game_type in the address and json with the fields 'name' and/or 'defaultState'
-            
+
             Output: Response with a header to the location of the updated game type
         ---
         description: Update a game type's information. Requires admin privileges
@@ -178,7 +181,8 @@ class GameTypeItem(Resource):
 
         return Response(
             status=200,
-            headers={"Location": url_for("api.gametypeitem", game_type=game_type)}
+            headers={"Location": url_for(
+                "api.gametypeitem", game_type=game_type)}
         )
 
     @require_admin
@@ -186,7 +190,7 @@ class GameTypeItem(Resource):
         """
         Delete a game type. Requires admin privileges.
             Input: Game type in the address
-            
+
             Output: 
         ---
         description: Delete a game type. Requires admin privileges.

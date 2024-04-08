@@ -164,6 +164,8 @@ paths:
             application/vnd.mason+json:
               example:
                 '@controls':
+                  profile:
+                    href: /api/profiles/user
                   boardgame:delete:
                     href: /api/users/user1
                     method: DELETE
@@ -308,6 +310,8 @@ paths:
             application/vnd.mason+json:
               example:
                 '@controls':
+                  profile:
+                    href: /api/profiles/game
                   boardgame:delete:
                     href: /api/games/15bd5a922e1b48ef9411b0d357660b73
                     method: DELETE
@@ -533,6 +537,8 @@ paths:
             application/vnd.mason+json:
               example:
                 '@controls':
+                  profile:
+                    href: /api/profiles/gametype
                   boardgame:delete:
                     href: /api/game_types/tictactoe
                     method: DELETE

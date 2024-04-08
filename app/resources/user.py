@@ -128,6 +128,7 @@ class UserItem(Resource):
             games=game_list
         )
         body.add_board_game_namespace()
+        body.add_control_profiles("user")
         body.add_control_all_users()
         body.add_control_delete_user(user)
         body.add_control_edit_user(user)
