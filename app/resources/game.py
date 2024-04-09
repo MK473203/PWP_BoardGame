@@ -27,7 +27,6 @@ class GameCollection(Resource):
         """Get a list of all games
             Input:
             Output: A list of all games
-
         """
         games = []
         for game in Game.query.all():
@@ -61,30 +60,6 @@ class GameCollection(Resource):
         """Create a new game instance
             Input: Json with the fields 'type' and 'user'
             Output: A Response with a header to the url of the created game
-            ---
-            description: Create a new game instance
-            requestBody:
-                description: JSON document that contains basic data for a new game
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/PostGame'
-                        example:
-                            type: tictactoe
-                            user: user1
-            responses:
-                '201':
-                    description: The game instance was created successfully
-                    headers:
-                        Location:
-                            description: URI of the new sensor
-                            schema:
-                                type: string
-                '409':
-                    description: This GameType does not exist
-                '415':
-                    description: Request content type must be JSON
-
         """
         if not request.is_json:
             return "Request content type must be JSON", 415
@@ -129,7 +104,6 @@ class GameItem(Resource):
 
         Input: id of the game in the address
         Output: Dictionary of all relevant information on the specified game
-
         """
         if game is None:
             raise NotFound
@@ -175,25 +149,6 @@ class GameItem(Resource):
 
         Input: JSON with the field 'currentPlayer'
         Output: 
-        ---
-        description: Update game instance information
-        parameters:
-        - $ref: '#/components/schemas/game'
-        requestBody:
-            description: JSON document that contains a new current player
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/PutGame'
-                    example:
-                        currentPlayer: user2
-        responses:
-            '200':
-                description: The game instance was modified successfully
-            '400':
-                description: Request body was not valid
-            '404':
-                description: Given user wasn't found
         """
         if game is None:
             raise NotFound
@@ -226,13 +181,6 @@ class GameItem(Resource):
         """Delete a game instance. Requires admin privileges.
             Input: Id of desired game
             Output:
-            ---
-            description: Delete the game instance Admin required
-            parameters:
-            - $ref: '#/components/schemas/game'
-            responses:
-                '200':
-                    description: The game instance was removed successfully
         """
         if game is None:
             raise NotFound
@@ -283,34 +231,6 @@ class MoveCollection(Resource):
         move: game type specific integer or list of tuples signifying the move(s) to play
         moveTime: Time in seconds that the player took to make the move (integer)
         Output: new game state
-        ---
-        description: The current player can make moves, after which the current player is set to none.
-        parameters:
-        - $ref: '#/components/schemas/game'
-        requestBody:
-            description: JSON document that contains the next move and movetime of the move. Example move is for tictactoe.
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/MoveGame'
-                    example:
-                        move: 4
-                        moveTime: 5
-        responses:
-            '200':
-                description: Move has been made succesfully new state returned. Example given with tictactoe
-                content:
-                    application/json:
-                        example: 
-                            -state: 2X--------
-            '400':
-                description: Invalid JSON
-            '403':
-                description: Must log in before making a move
-            '409':
-                description: This GameType does not exist
-            '415':
-                description: Request content type must be JSON
         """
         if game is None:
             raise NotFound

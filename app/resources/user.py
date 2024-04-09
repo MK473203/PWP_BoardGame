@@ -24,7 +24,7 @@ class UserCollection(Resource):
         User passwords not included.
         Input:
         Output: A list of all users
-        
+
         """
 
         user_list = []
@@ -47,27 +47,6 @@ class UserCollection(Resource):
         """Create a new user
             Input:Json with the fields 'name' and 'password'
             Output: Response with a header to the location of the new user
-            ---
-            description: Create a new user
-            requestBody:
-                description: JSON document that contains basic data for a new user
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/User'
-                        example:
-                            name: user1
-                            password: thisismysupersecretpassword
-            responses:
-                '201':
-                    description: The user was created successfully
-                    headers:
-                        Location:
-                            description: URI of the new user
-                            schema:
-                                type: string
-                '400':
-                    description: Invalid Json
         """
 
         try:
@@ -140,30 +119,6 @@ class UserItem(Resource):
         """Update user information. Requires user authentication
             Input: Username and json with the fields 'name' and/or 'password'
             Output: Response with a header to the location of the updated user
-            ---
-            description: Update user information. Requires user authentication
-            parameters:
-            - $ref: '#/components/schemas/user'
-            requestBody:
-                description: JSON document that contains a new current player
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/PutGame'
-                        example:
-                            currentPlayer: user2
-            responses:
-                '200':
-                    description: The user was modified successfully
-                    headers:
-                            Location:
-                                description: URI of the modified user
-                                schema:
-                                    -type: string
-                '400':
-                    description: Invalid Json
-                '403':
-                    description: Permission denied
         """
 
         if kwargs["login_user_id"] != user.id:
@@ -175,13 +130,11 @@ class UserItem(Resource):
         except ValidationError as e:
             raise BadRequest(description=str(e)) from e
 
-
         user_with_name = User.query.filter_by(name=request.json["name"])\
                                    .first()
 
         if user_with_name and user_with_name.id != user.id:
             return "User with the same name already exists. No changes were done.", 400
-
 
         validation_result = User.validate_password(
             request.json["password"])
@@ -203,16 +156,7 @@ class UserItem(Resource):
     def delete(self, user, **kwargs):
         """Delete an user. Requires user authentication
             Input: Username
-            Output: 
-            ---
-            description: Delete an user. Requires user authentication
-            parameters:
-            - $ref: '#/components/schemas/user'
-            responses:
-                '200':
-                    description: The user was removed successfully
-                '403':
-                    description: Permission denied
+            Output:
         """
 
         if kwargs["login_user_id"] != user.id:

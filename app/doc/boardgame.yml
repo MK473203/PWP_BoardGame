@@ -5,33 +5,30 @@ servers:
 components:
   parameters:
     user:
-      description: Selected User
+      description: User name
       in: path
       name: user
       required: true
       schema:
         type: string
     game:
-      description: Selected Game
+      description: Game instance UUID
       in: path
       name: game
       required: true
       schema:
         type: string
     gametype:
-      description: Selected GameType
+      description: Game type name
       in: path
-      name: game
+      name: gametype
       required: true
       schema:
         type: string
   schemas:
     User:
+      title: User creation
       properties:
-        id:
-          description: User id, unique
-          type: number
-          format: int
         name:
           description: User name, unique
           type: string
@@ -39,38 +36,69 @@ components:
           description: User password
           type: string
       required:
-      - id
       - name
       - password
       type: object
-    Game:
+    PostGame:
+      title: Game instance creation
       properties:
-        id:
-          description: Game id, unique
-          type: number
-          format: int
         type:
           description: Game type
-          type: number
-          format: int
-      required:
-      - id
-      - type
-      type: object
-    GameType:
-      properties:
-        id:
-          description: GameType id, unique
-          type: number
-          format: int
-        name:
-          description: Game name, unique
+          type: string
+        user:
+          description: Current player
           type: string
       required:
-      - id
+      - type
+      - user
+      type: object
+    PutGame:
+      title: Game instance modification
+      properties:
+        currentPlayer:
+          description: Current player
+          type: string
+      required:
+      - currentPlayer
+      type: object
+    Move:
+      title: Move making
+      properties:
+        move:
+          description: Move to be made. Format depends on game type
+        moveTime:
+          description: Time spent making this move in seconds.
+          type: integer
+      required:
+      - move
+      - moveTime
+      type: object
+    GameType:
+      title: Game type creation
+      properties:
+        name:
+          description: Game type name, unique
+          type: string
+        defaultState:
+          description: Starting state of the game
+          type: string
+      required:
       - name
+      - defaultState
       type: object
   securitySchemes:
+    AdminKeyAuth:
+      type: apiKey
+      in: header
+      name: Api-key
+    Username:
+      type: apiKey
+      in: header
+      name: username
+    Password:
+      type: apiKey
+      in: header
+      name: password
 info:
   title: PWP BoardGame
   version: 0.0.1
@@ -94,214 +122,229 @@ paths:
           content:
             application/vnd.mason+json:
               example:
+                items:
+                - name: user1
+                  '@controls':
+                    self:
+                      href: /api/users/user1
+                - name: user2
+                  '@controls':
+                    self:
+                      href: /api/users/user2
+                - name: user3
+                  '@controls':
+                    self:
+                      href: /api/users/user3
+                '@namespaces':
+                  boardgame:
+                    name: /api/link-relations/
                 '@controls':
+                  boardgame:gametypes-all:
+                    method: GET
+                    href: /api/game_types/
+                  boardgame:games-all:
+                    method: GET
+                    href: /api/games/
                   boardgame:add-user:
-                    encoding: json
-                    href: /api/users/
                     method: POST
+                    encoding: json
                     schema:
-                      properties:
-                        name:
-                          maxLength: 64
-                          minLength: 1
-                          type: string
-                        password:
-                          type: string
+                      type: object
                       required:
                       - name
                       - password
-                      type: object
-                  boardgame:games-all:
-                    href: /api/games/
-                    method: GET
-                  boardgame:gametypes-all:
-                    href: /api/game_types/
-                    method: GET
-                '@namespaces':
-                  boardgame:
-                    name: /boardgame/
-                items:
-                - '@controls':
-                    self:
-                      href: /api/users/user1
-                  name: user1
-                - '@controls':
-                    self:
-                      href: /api/users/user2
-                  name: user2
-                - '@controls':
-                    self:
-                      href: /api/users/user3
-                  name: user3
+                      properties:
+                        name:
+                          type: string
+                          minLength: 1
+                          maxLength: 64
+                        password:
+                          type: string
+                    href: /api/users/
     post: 
       description: Create a new user
       requestBody:
-          description: JSON document that contains basic data for a new user
-          content:
-              application/json:
-                  schema:
-                      $ref: '#/components/schemas/User'
-                  example:
-                      name: user1
-                      password: thisismysupersecretpassword
+        description: JSON document that contains basic data for a new user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+            example:
+              name: user1
+              password: thisismysupersecretpassword1
       responses:
-          '201':
-              description: The user was created successfully
-              headers:
-                  Location:
-                      description: URI of the new user
-                      schema:
-                          type: string
-          '400':
-              description: Invalid Json
-  /users/{user}/:
+        '201':
+          description: The user was created successfully
+          headers:
+            Location:
+              description: URI of the new user
+              schema:
+                type: string
+        '400':
+          description: Invalid Json
+  /users/{user}:
+    parameters:
+    - $ref: '#/components/parameters/user'
     get:
       description: Get an user's information. Requires an user to be logged in.
+      security:
+        - Username: []
+          Password: []
       responses:
         '200':
           description: Info successfully returned
           content:
             application/vnd.mason+json:
               example:
+                name: user1
+                turnsPlayed: 3
+                totalTime: 3
+                games:
+                - id: f4809997a91b46e39da3345d8c749be1
+                  type: 1
+                  result: -1
+                  '@controls':
+                    boardgame:game:
+                      href: /api/games/f4809997a91b46e39da3345d8c749be1
+                '@namespaces':
+                  boardgame:
+                    name: /api/link-relations/
                 '@controls':
                   profile:
-                    href: /api/profiles/user
-                  boardgame:delete:
-                    href: /api/users/user1
-                    method: DELETE
+                    href: /api/profiles/user/
                   boardgame:users-all:
-                    href: /api/users/
                     method: GET
-                  edit:
-                    encoding: json
+                    href: /api/users/
+                  boardgame:delete:
+                    method: DELETE
                     href: /api/users/user1
+                  edit:
                     method: PUT
+                    encoding: json
                     schema:
-                      properties:
-                        name:
-                          maxLength: 64
-                          minLength: 1
-                          type: string
-                        password:
-                          type: string
+                      type: object
                       required:
                       - name
                       - password
-                      type: object
-                games:
-                - '@controls':
-                    self:
-                      href: /api/games/4b569771967645a6978dc71904abc470
-                  id: 4b569771967645a6978dc71904abc470
-                  result: -1
-                  type: 1
-                name: user1
-                totalTime: 0
-                turnsPlayed: 0
+                      properties:
+                        name:
+                          type: string
+                          minLength: 1
+                          maxLength: 64
+                        password:
+                          type: string
+                    href: /api/users/user1
         '403':
           description: Permission denied (you need to be logged in)
         '404':
           description: User not found
     put:
       description: Update user information. Requires user authentication
-      parameters:
-      - $ref: '#/components/schemas/user'
+      security:
+        - Username: []
+          Password: []
       requestBody:
-          description: JSON document that contains a new current player
-          content:
-              application/json:
-                  schema:
-                      $ref: '#/components/schemas/PutGame'
-                  example:
-                      currentPlayer: user2
+        description: JSON document that contains the updated user information
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+            example:
+              name: coolname
+              password: securepassword1
       responses:
-          '200':
-              description: The user was modified successfully
-              headers:
-                      Location:
-                          description: URI of the modified user
-                          schema:
-                              -type: string
-          '400':
-              description: Invalid Json
-          '403':
-              description: Permission denied
+        '200':
+          description: The user was modified successfully
+          headers:
+            Location:
+              description: URI of the modified user
+              schema:
+                type: string
+        '400':
+          description: Invalid Json
+        '403':
+          description: Permission denied
     delete:
       description: Delete an user. Requires user authentication
-      parameters:
-      - $ref: '#/components/schemas/user'
+      security:
+        - Username: []
+          Password: []
       responses:
-          '200':
-              description: The user was removed successfully
-          '403':
-              description: Permission denied
+        '200':
+          description: The user was removed successfully
+        '403':
+          description: Permission denied
   /games/:
     get:
-      description: Get a list of all games
+      description: Get a list of all games.
       responses:
         '200':
           content:
             application/vnd.mason+json:
               example:
+                items:
+                - id: f4809997a91b46e39da3345d8c749be1
+                  type: tictactoe
+                  result: -1
+                  state: 2-XOX-----
+                  currentPlayer: null
+                  '@controls':
+                    self:
+                      href: /api/games/f4809997a91b46e39da3345d8c749be1
+                '@namespaces':
+                  boardgame:
+                    name: /api/link-relations/
                 '@controls':
                   boardgame:add-game:
-                    encoding: json
-                    href: /api/games/
                     method: POST
+                    encoding: json
                     schema:
+                      type: object
+                      required:
+                      - type
+                      - user
                       properties:
                         type:
                           type: string
                         user:
                           type: string
-                      required:
-                      - type
-                      - user
-                      type: object
-                  boardgame:gametypes-all:
-                    href: /api/game_types/
-                    method: GET
-                  boardgame:get-random:
-                    href: /api/games/random/tictactoe
+                    href: /api/games/
                   boardgame:users-all:
-                    href: /api/users/
                     method: GET
-                '@namespaces':
-                  boardgame:
-                    name: /boardgame/
-                items:
-                - '@controls':
-                    self:
-                      href: /api/games/15bd5a922e1b48ef9411b0d357660b73
-                  currentPlayer: user1
-                  id: 15bd5a922e1b48ef9411b0d357660b73
-                  result: -1
-                  state: 1---------
-                  type: tictactoe
+                    href: /api/users/
+                  boardgame:gametypes-all:
+                    method: GET
+                    href: /api/game_types/
     post:
-      description: Create a new game instance
+      description: Create a new game instance. Admin authentication required.
+      security:
+        - AdminKeyAuth: []
       requestBody:
-          description: JSON document that contains basic data for a new game
-          content:
-              application/json:
-                  schema:
-                      $ref: '#/components/schemas/PostGame'
-                  example:
-                      type: tictactoe
-                      user: user1
+        description: JSON document that contains basic data for a new game
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostGame'
+            example:
+              type: tictactoe
+              user: user1
       responses:
-          '201':
-              description: The game instance was created successfully
-              headers:
-                  Location:
-                      description: URI of the new sensor
-                      schema:
-                          type: string
-          '409':
-              description: This GameType does not exist
-          '415':
-              description: Request content type must be JSON
-  /games/{game}/:
+        '201':
+          description: The game instance was created successfully
+          headers:
+            Location:
+              description: URI of the new game instance
+              schema:
+                type: string
+        '403':
+          description: Insufficient authentication
+        '409':
+          description: This GameType does not exist
+        '415':
+          description: Request content type must be JSON
+  /games/{game}:
+    parameters:
+    - $ref: '#/components/parameters/game'
     get:
       description: Get information about a game instance
       responses:
@@ -309,66 +352,92 @@ paths:
           content:
             application/vnd.mason+json:
               example:
+                id: f4809997a91b46e39da3345d8c749be1
+                type: tictactoe
+                result: -1
+                state: 2-XOX-----
+                currentPlayer: null
+                moveHistory: '[1, 2, 3]'
+                players:
+                - username: user1
+                  '@controls':
+                    boardgame:player:
+                      href: /api/users/user1
+                '@namespaces':
+                  boardgame:
+                    name: /api/link-relations/
                 '@controls':
                   profile:
-                    href: /api/profiles/game
-                  boardgame:delete:
-                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73
-                    method: DELETE
+                    href: /api/profiles/game/
                   boardgame:games-all:
-                    href: /api/games/
                     method: GET
+                    href: /api/games/
                   boardgame:join-game:
-                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73/join
                     method: POST
+                    href: /api/games/f4809997a91b46e39da3345d8c749be1/join
                   boardgame:make-move:
-                    encoding: json
-                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73/moves
                     method: POST
+                    encoding: json
                     schema:
-                      properties:
-                        moveTime:
-                          type: integer
+                      type: object
                       required:
                       - move
                       - moveTime
-                      type: object
+                      properties:
+                        moveTime:
+                          type: integer
+                    href: /api/games/f4809997a91b46e39da3345d8c749be1/moves
                   edit:
-                    encoding: json
-                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73
                     method: PUT
+                    encoding: json
                     schema:
+                      type: object
+                      required:
+                      - currentPlayer
                       properties:
                         currentPlayer:
+                          type: string
+                    href: /api/games/f4809997a91b46e39da3345d8c749be1
+                  boardgame:delete:
+                    method: DELETE
+                    href: /api/games/f4809997a91b46e39da3345d8c749be1
         '404':
           description: Game instance not found
     put:
-      description: Update game instance information
-      parameters:
-      - $ref: '#/components/schemas/game'
+      description: Update game instance information. Admin authentication required
+      security:
+        - AdminKeyAuth: []
       requestBody:
-          description: JSON document that contains a new current player
-          content:
-              application/json:
-                  schema:
-                      $ref: '#/components/schemas/PutGame'
-                  example:
-                      currentPlayer: user2
+        description: JSON document that contains a new current player
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutGame'
+            example:
+              currentPlayer: user2
       responses:
-          '200':
-              description: The game instance was modified successfully
-          '400':
-              description: Request body was not valid
-          '404':
-              description: Given user wasn't found
+        '200':
+          description: The game instance was modified successfully
+        '400':
+          description: Request body was not valid
+        '403':
+          description: Insufficient authentication
+        '404':
+          description: Given game wasn't found
     delete:
-      description: Delete the game instance Admin required
-      parameters:
-      - $ref: '#/components/schemas/game'
+      description: Delete the game instance. Admin authentication required
+      security:
+        - AdminKeyAuth: []
       responses:
-          '200':
-              description: The game instance was removed successfully
-  /games/{game}/moves/:
+        '200':
+          description: The game instance was removed successfully
+        '403':
+          description: Insufficient authentication
+        '404':
+          description: Given game wasn't found
+  /games/{game}/moves:
+    parameters:
+    - $ref: '#/components/parameters/game'
     get:
       description: get the move history of a given game instance
       responses:
@@ -376,47 +445,59 @@ paths:
           content:
             application/vnd.mason+json:
               example:
+                moveHistory: '[1, 2, 3]'
                 '@controls':
                   up:
-                    href: /api/games/15bd5a922e1b48ef9411b0d357660b73
-                moveHistory: None
+                    href: /api/games/f4809997a91b46e39da3345d8c749be1
         '404':
           description: Game instance not found
     post:
       description: The current player can make moves, after which the current player is set to none.
+      security:
+        - Username: []
+          Password: []
       requestBody:
           description: JSON document that contains the next move and movetime of the move. Example move is for tictactoe.
           content:
               application/json:
                   schema:
-                      $ref: '#/components/schemas/MoveGame'
+                      $ref: '#/components/schemas/Move'
                   example:
                       move: 4
                       moveTime: 5
       responses:
-          '200':
-              description: Move has been made succesfully new state returned. Example given with tictactoe
-              content:
-                  application/json:
-                      example: 
-                          -state: 2X--------
-          '400':
-              description: Invalid JSON
-          '403':
-              description: Must log in before making a move
-          '409':
-              description: This GameType does not exist
-          '415':
-              description: Request content type must be JSON
-  /games/{game}/join/:
+        '200':
+          description: Move has been made succesfully new state returned. Example given with tictactoe
+          content:
+            application/json:
+              example: 
+                -state: 2----X----
+        '400':
+          description: Invalid JSON
+        '403':
+          description: Must log in before making a move
+        '409':
+          description: This GameType does not exist
+        '415':
+          description: Request content type must be JSON
+  /games/{game}/join:
+    parameters:
+    - $ref: '#/components/parameters/game'
     post:
       description: Try to join a game instance. Returns an error if the game already has a player
+      security:
+        - Username: []
+          Password: []
       responses:
         '200':
           description: Game joined succesfully
           content:
             application/vnd.mason+json:
               example:
+                ok: Ok
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
                 '@controls':
                   boardgame:make-move:
                     encoding: json
@@ -430,10 +511,8 @@ paths:
                       - move
                       - moveTime
                       type: object
-                '@namespaces':
-                  boardgame:
-                    name: /boardgame/
-                ok: Ok
+        '403':
+          description: Must log in before joining a game
         '404':
           description: Game not found
         '409':
@@ -441,29 +520,42 @@ paths:
           content:
             application/vnd.mason+json:
               example:
+                error: Game already has a player
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
                 '@controls':
                   boardgame:games-all:
                     href: /api/games/
                     method: GET
-                '@namespaces':
-                  boardgame:
-                    name: /boardgame/
-                error: Game already has a player
-  /games/random/{gametype}/:
+  /games/random/{gametype}:
+    parameters:
+    - $ref: '#/components/parameters/gametype'
     get:
-      description: Redirects to the id of an random game with no current player. Should not be spammed!!! Creates a bunch of new games.
+      description: Redirects to the id of an random game with no current player. Requires an user to be logged in.
+      security:
+        - Username: []
+          Password: []
       responses:
         '200':
+          description: A game instance was found.
+          headers:
+            Location:
+              description: URI of the game instance
+              schema:
+                type: string
           content:
             application/vnd.mason+json:
               example:
+                '@namespaces':
+                  boardgame:
+                    name: /boardgame/
                 '@controls':
                   boardgame:join-game:
                     href: /api/games/69a25cc03b314b5ca2d56fc8f80ffaeb/join
                     method: POST
-                '@namespaces':
-                  boardgame:
-                    name: /boardgame/
+        '403':
+          description: User authentication required
         '404':
           description: Game type not found
   /game_types/:
@@ -474,61 +566,67 @@ paths:
           content:
             application/vnd.mason+json:
               example:
+                items:
+                - name: tictactoe
+                  defaultState: 1---------
+                  '@controls':
+                    self:
+                      href: /api/game_types/tictactoe
+                '@namespaces':
+                  boardgame:
+                    name: /api/link-relations/
                 '@controls':
+                  boardgame:users-all:
+                    method: GET
+                    href: /api/users/
+                  boardgame:games-all:
+                    method: GET
+                    href: /api/games/
                   boardgame:add-gametype:
-                    encoding: json
-                    href: /api/game_types/
                     method: POST
+                    encoding: json
                     schema:
-                      properties:
-                        defaultState:
-                          maxLength: 256
-                          type: string
-                        name:
-                          maxLength: 64
-                          minLength: 1
-                          type: string
+                      type: object
                       required:
                       - name
                       - defaultState
-                      type: object
-                  boardgame:games-all:
-                    href: /api/games/
-                    method: GET
-                  boardgame:users-all:
-                    href: /api/users/
-                    method: GET
-                '@namespaces':
-                  boardgame:
-                    name: /boardgame/
-                items:
-                - '@controls':
-                    self:
-                      href: /api/game_types/tictactoe
-                  defaultState: 1---------
-                  name: tictactoe
-    post:
-      description: Create a new game type
-      requestBody:
-          description: JSON document that contains basic data for a new game type
-          content:
-              application/json:
-                  schema:
-                      $ref: '#/components/schemas/GameType'
-                  example:
-                      name: tictactoe
-                      defaultState: 1---------
-      responses:
-          '201':
-              description: The game type was created successfully
-              headers:
-                  Location:
-                      description: URI of the new gametype
-                      schema:
+                      properties:
+                        name:
                           type: string
-          '400':
-              description: Invalid Json
-  /game_types/{gametype}/:
+                          minLength: 1
+                          maxLength: 64
+                        defaultState:
+                          type: string
+                          maxLength: 256
+                    href: /api/game_types/
+    post:
+      description: Create a new game type. Admin authentication required.
+      security:
+        - AdminKeyAuth: []
+      requestBody:
+        description: JSON document that contains basic data for a new game type
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameType'
+            example:
+              name: tictactoe
+              defaultState: 1---------
+      responses:
+        '201':
+          description: The game type was created successfully
+          headers:
+            Location:
+              description: URI of the new gametype
+              schema:
+                type: string
+        '400':
+          description: Invalid Json
+        '403':
+          description: Insufficient authentication
+  /game_types/{gametype}:
+    parameters:
+    - $ref: '#/components/parameters/gametype'
     get:
       description: Get a game_type's information
       responses:
@@ -536,70 +634,77 @@ paths:
           content:
             application/vnd.mason+json:
               example:
+                name: tictactoe
+                defaultState: 1---------
+                '@namespaces':
+                  boardgame:
+                    name: /api/link-relations/
                 '@controls':
                   profile:
-                    href: /api/profiles/gametype
-                  boardgame:delete:
-                    href: /api/game_types/tictactoe
-                    method: DELETE
+                    href: /api/profiles/gametype/
                   boardgame:gametypes-all:
+                    method: GET
                     href: /api/game_types/
-                    method: GET
                   boardgame:get-random:
-                    href: /api/games/random/tictactoe
                     method: GET
+                    href: /api/games/random/tictactoe
                   edit:
-                    encoding: json
-                    href: /api/game_types/tictactoe
                     method: PUT
+                    encoding: json
                     schema:
-                      properties:
-                        defaultState:
-                          maxLength: 256
-                          type: string
-                        name:
-                          maxLength: 64
-                          minLength: 1
-                          type: string
+                      type: object
                       required:
                       - name
                       - defaultState
-                      type: object
-                '@namespaces':
-                  boardgame:
-                    name: /boardgame/
-                defaultState: 1---------
-                name: tictactoe
+                      properties:
+                        name:
+                          type: string
+                          minLength: 1
+                          maxLength: 64
+                        defaultState:
+                          type: string
+                          maxLength: 256
+                    href: /api/game_types/tictactoe
+                  boardgame:delete:
+                    method: DELETE
+                    href: /api/game_types/tictactoe
         '404':
           description: Game type not found
     put:
-      description: Update a game type's information. Requires admin privileges
-      parameters:
+      description: Update a game type's information. Admin authentication required.
+      security:
+        - AdminKeyAuth: []
       requestBody:
-          description: JSON document that contains a new gametype
-          content:
-              application/json:
-                  schema:
-                    $ref: '#/components/schemas/GameType'
-                  example:
-                      name: tictactoe
-                      defaultState: 1---------
+        description: JSON document that contains a new gametype
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameType'
+            example:
+              name: tictactoe
+              defaultState: 1---------
       responses:
-          '200':
-            description: The game type was modified successfully
-            headers:
-              Location:
-                description: URI of the modified game type
-                schema:
-                  type: string
-          '400':
-              description: Invalid Json
+        '200':
+          description: The game type was modified successfully
+          headers:
+            Location:
+              description: URI of the modified game type
+              schema:
+                type: string
+        '400':
+          description: Invalid Json
+        '403':
+          description: Permission denied
+        '404':
+          description: Game type not found
     delete:
-      description: Delete a game type. Requires admin privileges.
-      parameters:
-      - $ref: '#/components/schemas/gametype'
+      description: Delete a game type. Admin authentication required.
+      security:
+        - AdminKeyAuth: []
       responses:
-          '200':
-              description: The gametype was removed successfully
-          '403':
-              description: Permission denied
+        '200':
+          description: The gametype was removed successfully
+        '403':
+          description: Permission denied
+        '404':
+          description: Game type not found

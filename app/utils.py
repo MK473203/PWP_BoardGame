@@ -55,7 +55,7 @@ def require_admin(func):
 
     def wrapper(*args, **kwargs):
         hashed_key = key_hash(
-            request.headers.get("Api_key", "").strip())
+            request.headers.get("Api-key", "").strip())
         if secrets.compare_digest(hashed_key, ADMIN_KEY_HASH):
             return func(*args, **kwargs)
         raise Forbidden
@@ -132,7 +132,7 @@ class BoardGameBuilder(dict):
         """
         Add the 'boardgame' namespace to the object
         """
-        self.add_namespace("boardgame", LINK_RELATIONS)
+        self.add_namespace("boardgame", "/api" + LINK_RELATIONS)
 
     def add_control_profiles(self, profile):
         """
