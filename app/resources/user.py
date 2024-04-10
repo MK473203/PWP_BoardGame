@@ -32,7 +32,7 @@ class UserCollection(Resource):
 
         for user in users:
             user_obj = BoardGameBuilder(name=user.name)
-            user_obj.add_control("self", url_for("api.useritem", user=user))
+            user_obj.add_control("self", url_for("api.useritem", user=user), method="GET")
             user_list.append(user_obj)
 
         body = BoardGameBuilder(items=user_list)
@@ -108,7 +108,8 @@ class UserItem(Resource):
         )
         body.add_board_game_namespace()
         body.add_control_profiles("user")
-        body.add_control_all_users()
+        body.add_control("collection",
+                         url_for("api.usercollection"), method="GET")
         body.add_control_delete_user(user)
         body.add_control_edit_user(user)
 

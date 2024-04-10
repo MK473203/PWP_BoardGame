@@ -45,7 +45,8 @@ class GameCollection(Resource):
                 state=game.state,
                 currentPlayer=player
             )
-            game_obj.add_control("self", url_for("api.gameitem", game=game))
+            game_obj.add_control("self", url_for(
+                "api.gameitem", game=game), method="GET")
             games.append(game_obj)
 
         body = BoardGameBuilder(items=games)
@@ -134,7 +135,8 @@ class GameItem(Resource):
 
         body.add_board_game_namespace()
         body.add_control_profiles("game")
-        body.add_control_all_games()
+        body.add_control("collection",
+                         url_for("api.gamecollection"), method="GET")
         body.add_control_join_game(game)
         body.add_control_make_move(game)
         body.add_control_edit_game(game)
@@ -212,7 +214,8 @@ class MoveCollection(Resource):
         if game.moveHistory is not None:
             body["moveHistory"] = str(pickle.loads(game.moveHistory))
 
-        body.add_control("up", url_for("api.gameitem", game=game))
+        body.add_control("up", url_for(
+            "api.gameitem", game=game), method="GET")
 
         return Response(json.dumps(body), 200, mimetype=MASON)
 
@@ -292,7 +295,7 @@ class MoveCollection(Resource):
         game.result = move_result[1]
 
         db.session.commit()
-        return Response(game.state + " result:" + str(move_result[1]), 200)
+        return Response(game.state + " result:" + str(move_result[1]), 200, headers={"Location": url_for("api.movecollection", game=game)})
 
 
 class JoinGame(Resource):
@@ -323,7 +326,8 @@ class JoinGame(Resource):
         else:
             body = BoardGameBuilder(error="Game already has a player")
             body.add_board_game_namespace()
-            body.add_control_all_games()
+            body.add_control("collection",
+                             url_for("api.gamecollection"), method="GET")
             return Response(response=json.dumps(body),
                             status=409,
                             mimetype=MASON)

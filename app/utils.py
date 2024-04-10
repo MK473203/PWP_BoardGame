@@ -73,24 +73,6 @@ class BoardGameBuilder(dict):
     elements into the object and ready-made functions for adding boardgame controls.
     """
 
-    def add_error(self, title, details):
-        """
-        Adds an error element to the object. Should only be used for the root
-        object, and only in error scenarios.
-
-        Note: Mason allows more than one string in the @messages property (it's
-        in fact an array). However we are being lazy and supporting just one
-        message.
-
-        : param str title: Short title for the error
-        : param str details: Longer human-readable description
-        """
-
-        self["@error"] = {
-            "@message": title,
-            "@messages": [details],
-        }
-
     def add_namespace(self, ns, uri):
         """
         Adds a namespace element to the object. A namespace defines where our

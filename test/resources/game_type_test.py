@@ -3,6 +3,7 @@ from test.test_utils import TEST_KEY, client, game_url
 
 from werkzeug.datastructures import Headers
 
+
 class TestGameTypeCollection():
     """Tests for the /api/game_types/ endpoint"""
 
@@ -91,6 +92,10 @@ class TestGameTypeItem():
         "defaultState": "state"
     }
 
+    INVALID_GAME_TYPE_DATA = {
+        "name": "checkers"
+    }
+
     VALID_EXISTING_GAME_TYPE_DATA = {
         "name": "tictactoe2",
         "defaultState": "state"
@@ -120,6 +125,11 @@ class TestGameTypeItem():
         # Test with invalid url
         resp = client.put(self.INVALID_URL, json=self.VALID_NEW_GAME_TYPE_DATA)
         assert resp.status_code == 404
+
+        # Test with an invalid JSON
+        resp = client.put(self.RESOURCE_URL,
+                          json=self.INVALID_GAME_TYPE_DATA)
+        assert resp.status_code == 400
 
         # Test with another game type's name
         resp = client.put(self.RESOURCE_URL,

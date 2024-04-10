@@ -25,12 +25,17 @@ GAME_TYPE_PUT_JSON = {
     "defaultState": "state2"
 }
 
+MOVE_JSON = {
+    "move": 1,
+    "moveTime": 1
+}
+
 
 class TestHypermedia():
     """Test the hypermedia implementation by hopping between urls using hypermedia controls"""
 
     def go_through_control(self, resp, client, ctrl_name, **kwargs):
-        ctrl = json.loads(resp.data)["@controls"][ctrl_name]
+        ctrl = json.loads(resp)["@controls"][ctrl_name]
         method = ctrl["method"]
 
         if method == "GET":
@@ -58,7 +63,9 @@ class TestHypermedia():
 
     def test_hypermedia(self, client):
         """
-        Big test
+        Big test.
+        Does a lap through UserCollection -> UserItem -> UserCollection -> GameTypeCollection -> GameTypeItem -> RandomGame -> JoinGame -> MoveCollection -> GameItem -> GameCollection
+        Using hypermedia and the location header
         """
 
         h = Headers({
@@ -71,40 +78,61 @@ class TestHypermedia():
 
         # Go to UserCollection
         resp = self.go_through_control(
-            resp, client, "boardgame:users-all", headers=h)
+            resp.data, client, "boardgame:users-all", headers=h)
 
         # Create an user and go to the created user's address
         resp = self.go_through_control(
-            resp, client, "boardgame:add-user", json=USER_POST_JSON, headers=h)
+            resp.data, client, "boardgame:add-user", json=USER_POST_JSON, headers=h)
 
         # Edit user information
         resp = self.go_through_control(
-            resp, client, "edit", json=USER_POST_JSON, headers=h)
+            resp.data, client, "edit", json=USER_POST_JSON, headers=h)
 
         # Go back to UserCollection
         resp = self.go_through_control(
-            resp, client, "boardgame:users-all", headers=h)
+            resp.data, client, "collection", headers=h)
 
         # Go to GameTypeCollection
         resp = self.go_through_control(
-            resp, client, "boardgame:gametypes-all", headers=h)
+            resp.data, client, "boardgame:gametypes-all", headers=h)
 
         # Create a game type and go to the created game type's address
         resp = self.go_through_control(
-            resp, client, "boardgame:add-gametype", json=GAME_TYPE_POST_JSON, headers=h)
+            resp.data, client, "boardgame:add-gametype", json=GAME_TYPE_POST_JSON, headers=h)
 
         # Edit the game type's information
         resp = self.go_through_control(
-            resp, client, "edit", json=GAME_TYPE_PUT_JSON, headers=h)
+            resp.data, client, "edit", json=GAME_TYPE_PUT_JSON, headers=h)
 
-        # Go back to GameTypeCollection
+        # Go to GameTypeCollection
         resp = self.go_through_control(
-            resp, client, "boardgame:gametypes-all", headers=h)
+            resp.data, client, "collection", headers=h)
 
-        # Go to GameCollection
+        game_type_item = [item for item in json.loads(
+            resp.data)["items"] if item["name"] == "tictactoe"][0]
+        resp = json.dumps(game_type_item)
+
+        # Go to tictactoe's GameTypeItem
         resp = self.go_through_control(
-            resp, client, "boardgame:games-all", headers=h)
+            resp, client, "self", headers=h)
 
-        # TBC
+        # Get a random tictactoe game instance through get-random
+        resp = self.go_through_control(
+            resp.data, client, "boardgame:get-random", headers=h)
+
+        # Join the game instance
+        resp = self.go_through_control(
+            resp.data, client, "boardgame:join-game", headers=h)
+
+        # Make a move
+        resp = self.go_through_control(
+            resp.data, client, "boardgame:make-move", json=MOVE_JSON, headers=h)
+
+        # Go to GameCollection through GameItem
+        resp = self.go_through_control(
+            resp.data, client, "up", headers=h)
+
+        resp = self.go_through_control(
+            resp.data, client, "collection", headers=h)
 
         print(resp.data)

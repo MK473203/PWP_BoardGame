@@ -34,7 +34,7 @@ class GameTypeCollection(Resource):
                 defaultState=game_type.defaultState
             )
             game_type_obj.add_control("self", url_for(
-                "api.gametypeitem", game_type=game_type))
+                "api.gametypeitem", game_type=game_type), method="GET")
             game_type_list.append(game_type_obj)
 
         body = BoardGameBuilder(items=game_type_list)
@@ -94,7 +94,8 @@ class GameTypeItem(Resource):
         )
         body.add_board_game_namespace()
         body.add_control_profiles("gametype")
-        body.add_control_all_game_types()
+        body.add_control("collection",
+                         url_for("api.gametypecollection"), method="GET")
         body.add_control("boardgame:get-random", url_for(
             "api.randomgame", game_type=game_type), method="GET")
         body.add_control_edit_game_type(game_type)
