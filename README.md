@@ -14,7 +14,7 @@ Database uses SQLite, version 3.40.1\
 ## Instructions:
 
 **Pull submodules if you want to use the client and spectator API:**\
-```git submodule update```
+```git submodule update --init```
 
 **(Optional but recommended) Setup a python virtual environment:**\
 ```python -m venv <name>```
