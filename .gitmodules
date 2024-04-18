@@ -1,0 +1,6 @@
+[submodule "specAPI"]
+	path = specAPI
+	url = https://github.com/MK473203/PWP_BoardGame_SpecAPI.git
+[submodule "client"]
+	path = client
+	url = https://github.com/MK473203/PWP_BoardGame_Client.git
