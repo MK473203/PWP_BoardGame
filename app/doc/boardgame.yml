@@ -182,6 +182,8 @@ paths:
                 type: string
         '400':
           description: Invalid Json
+        '415':
+          description: Unsupported media type. Should be JSON
   /users/{user}:
     parameters:
     - $ref: '#/components/parameters/user'
@@ -264,6 +266,8 @@ paths:
           description: Invalid Json
         '403':
           description: Permission denied
+        '415':
+          description: Unsupported media type. Should be JSON
     delete:
       description: Delete an user. Requires user authentication
       security:
@@ -341,7 +345,7 @@ paths:
         '409':
           description: This GameType does not exist
         '415':
-          description: Request content type must be JSON
+          description: Unsupported media type. Should be JSON
   /games/{game}:
     parameters:
     - $ref: '#/components/parameters/game'
@@ -424,6 +428,8 @@ paths:
           description: Insufficient authentication
         '404':
           description: Given game wasn't found
+        '415':
+          description: Unsupported media type. Should be JSON
     delete:
       description: Delete the game instance. Admin authentication required
       security:
@@ -479,7 +485,7 @@ paths:
         '409':
           description: This GameType does not exist
         '415':
-          description: Request content type must be JSON
+          description: Unsupported media type. Should be JSON
   /games/{game}/join:
     parameters:
     - $ref: '#/components/parameters/game'
@@ -624,6 +630,8 @@ paths:
           description: Invalid Json
         '403':
           description: Insufficient authentication
+        '415':
+          description: Unsupported media type. Should be JSON
   /game_types/{gametype}:
     parameters:
     - $ref: '#/components/parameters/gametype'
@@ -697,6 +705,8 @@ paths:
           description: Permission denied
         '404':
           description: Game type not found
+        '415':
+          description: Unsupported media type. Should be JSON
     delete:
       description: Delete a game type. Admin authentication required.
       security:
