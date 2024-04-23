@@ -139,6 +139,7 @@ class GameItem(Resource):
                          url_for("api.gamecollection"), method="GET")
         body.add_control_join_game(game)
         body.add_control_make_move(game)
+        body.add_control_spectate(game)
         body.add_control_edit_game(game)
         body.add_control_delete_game(game)
 
