@@ -222,7 +222,7 @@ class BoardGameBuilder(dict):
         """
         self.add_control("boardgame:make-move", url_for("api.movecollection", game=game),
                          method="POST", encoding="json", schema=Game.move_schema())
-
+        
     def add_control_spectate(self, game):
         """
         Add the spectate control to the object
