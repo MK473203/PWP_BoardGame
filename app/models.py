@@ -234,6 +234,19 @@ def populate_db_command():  # pragma: no cover
     game_type_1 = GameType(name="tictactoe", defaultState="1---------")
     db.session.add(game_type_1)
     db.session.commit()
+    
+    game_type_2 = GameType(
+        name="checkers",
+        defaultState="1-w-w-w-w"
+                    + "w-w-w-w-"
+                    + "--------"*4
+                    + "-b-b-b-b"
+                    + "b-b-b-b-"
+    )
+    
+    db.session.add(game_type_1)
+    db.session.add(game_type_2)
+    db.session.commit()
 
     from app.utils import key_hash
 
