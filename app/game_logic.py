@@ -31,7 +31,7 @@ Use included apply_move() function to play a move on a specific board.
 #  move = tuple like (1, 2), where a mark is moved from index 1 to index 2.
 
 
-def apply_move(move: int | list[tuple], state: str, game_type: str) -> tuple[str, int] | None:
+def apply_move(move: int | list[int], state: str, game_type: str) -> tuple[str, int] | None:
     """ Applies a move to a board state.
 
     Returns None if an argument is invalid.
@@ -52,7 +52,10 @@ def apply_move(move: int | list[tuple], state: str, game_type: str) -> tuple[str
     # Extract current team from state
     team = int(state[0])
     state = state[1:]
-
+    
+    # Keep track whether checkers team changes
+    team_changes = True
+    
     # Play the move
     if game_type == "tictactoe":
         if not isinstance(move, int) or not is_valid_move(move, team, state, game_type):
@@ -60,45 +63,43 @@ def apply_move(move: int | list[tuple], state: str, game_type: str) -> tuple[str
         next_mark = "X" if (team == 1) else "O"
         state = string_insert(state, move, next_mark)
     elif game_type == "checkers":
-        if not isinstance(move, list) or not all(isinstance(m, tuple) for m in move):
+        if not isinstance(move, list):
             return None
-        prev_move_to = 0
-        for m_index, m in enumerate(move):
-            if not is_valid_move(m, team, state, game_type):
-                if m_index == 0:
-                    # First move in jump chain is invalid, prevent whole move
-                    return None
-                # First move in jump chain was valid, play the jumps until first invalid jump
-                break
+        if not is_valid_move(move, team, state, game_type):
+            return
 
-            # Get indexes from move tuple
-            move_from = m[0]
-            move_to = m[1]
-            middle = (move_to + move_from) / 2
+        # Get indexes from move list
+        move_from = move[0]
+        move_to = move[1]
+        middle = (move_to + move_from) / 2
 
-            # Chained moves must start from the end of previous move and jump over an enemy mark
-            if m_index > 0 and (prev_move_to != move_from or middle % 1 != 0):
-                break
-            prev_move_to = move_to
+        # If jumped over a mark, remove it
+        if middle % 1 == 0:
+            state = string_insert(state, int(middle), "-")
 
-            # If jumped over a mark, remove it
-            if middle % 1 == 0:
-                state = string_insert(state, int(middle), "-")
-
-            # Move mark to new position
-            mark = state[move_from]
-            if move_to // 8 == (0 if (team == 1) else 7):
-                # Mark reached opponent's first row, make it a king
-                state = string_insert(state, move_to, mark.upper())
-            else:
-                state = string_insert(state, move_to, mark)
-            state = string_insert(state, move_from, "-")
+        # Get moving mark type
+        mark = state[move_from]
+        
+        # If mark reached opponents first row, make it king
+        # Place the mark at its destination
+        if move_to // 8 == (0 if (team == 1) else 7):
+            state = string_insert(state, move_to, mark.upper())
+        else:
+            state = string_insert(state, move_to, mark)
+        state = string_insert(state, move_from, "-")
+        
+        # Don't change team if jumped over a piece
+        if (move_to - move_from) % 18 == 0 or (move_to - move_from) % 14 == 0:
+            team_changes = False
 
     # Check win conditions
     win_state = get_winner(state, team, game_type)
 
-    # Add next team to state
-    next_team = 2 if (team == 1) else 1
+    # Update active team and insert it back to state
+    if team_changes:
+        next_team = 2 if (team == 1) else 1
+    else:
+        next_team = team
     state = str(next_team) + state
 
     return state, win_state
