@@ -23,6 +23,9 @@ MASON = "application/vnd.mason+json"
 PROFILES = "/profiles/"
 LINK_RELATIONS = "/link-relations/"
 
+# Change this to the correct address if not localhost:5001
+SPECTATE_API_URL = "http://localhost:5001/spectate/"
+
 
 def require_login(func):
     """
@@ -219,3 +222,10 @@ class BoardGameBuilder(dict):
         """
         self.add_control("boardgame:make-move", url_for("api.movecollection", game=game),
                          method="POST", encoding="json", schema=Game.move_schema())
+        
+    def add_control_spectate(self, game):
+        """
+        Add the spectate control to the object
+        """
+        self.add_control("boardgame:spectate", SPECTATE_API_URL + game.uuid,
+                         method="GET")
