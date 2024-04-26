@@ -57,14 +57,16 @@ Additionally, Mika identified several issues in the database design and implemen
 
 
 ## Meeting 4.
-* **DATE:**
-* **ASSISTANTS:**
+* **DATE: 11.4.2024**
+* **ASSISTANTS: Mika Oja**
 
 ### Minutes
-*Summary of what was discussed during the meeting*
+- A quick demo of API documentation and hypermedia implementation
+- Re-checking of our pylint score
+- Mika graded our code and wiki. No significant problems found.
 
 ### Action points
-*List here the actions points discussed with assistants*
+- Add a couple of missing 415 error codes to the documentation.
 
 
 
