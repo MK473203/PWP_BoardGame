@@ -1,0 +1,4 @@
+[submodule "client"]
+	branch = main
+[submodule "specAPI"]
+	branch = main
