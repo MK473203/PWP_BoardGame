@@ -20,6 +20,7 @@ def entrypoint():
     """ Entrypoint into the API. """
     body = BoardGameBuilder()
     body.add_board_game_namespace()
+    body.add_control_all_games()
     body.add_control_all_game_types()
     body.add_control_all_users()
     return Response(json.dumps(body), 200, mimetype=MASON)
