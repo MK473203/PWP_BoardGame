@@ -25,7 +25,8 @@ PROFILES = "/profiles/"
 LINK_RELATIONS = "/link-relations/"
 
 # Change this to the correct address if not localhost:5001
-SPECTATE_API_URL = "http://" + requests.get("https://checkip.amazonaws.com").text.strip() + ":5001/spectate/"
+#SPECTATE_API_URL = "http://" + requests.get("https://checkip.amazonaws.com").text.strip() + ":5001/spectate/"
+SPECTATE_API_URL = "http://localhost:5001/spectate/"
 
 
 def require_login(func):
