@@ -19,10 +19,10 @@ def test_state_updates():
 
     # Checkers
     state = DEFAULT_STATE["checkers"]
-    test_state1 = apply_move([(49, 42)], state, game_type="checkers")[0][1:]
+    test_state1 = apply_move([49, 42], state, game_type="checkers")[0][1:]
     assert test_state1[49] == "-"
     assert test_state1[42] == "b"
-    test_state2 = apply_move([(8, 17)], "2" + state[1:], game_type="checkers")[0][1:]
+    test_state2 = apply_move([8, 17], "2" + state[1:], game_type="checkers")[0][1:]
     assert test_state2[8] == "-"
     assert test_state2[17] == "w"
 
@@ -36,9 +36,9 @@ def test_invalid_moves():
 
     # Checkers
     state = DEFAULT_STATE["checkers"]
-    assert apply_move((8, 17), state, game_type="checkers") is None     # Wrong team moving
-    assert apply_move((49, 58), state, game_type="checkers") is None    # Moving on top of own mark
-    assert apply_move((56, 42), state, game_type="checkers") is None    # Eating own mark
+    assert apply_move([8, 17], state, game_type="checkers") is None     # Wrong team moving
+    assert apply_move([49, 58], state, game_type="checkers") is None    # Moving on top of own mark
+    assert apply_move([56, 42], state, game_type="checkers") is None    # Eating own mark
 
 def test_win_states():
     """ Correct win-state is returned """
@@ -54,6 +54,6 @@ def test_win_states():
     winning_b_example = "1" + "--------"*6 + "-----w--" + "------b-"
     winning_w_example = "2" + "--------"*6 + "-----b--" + "------w-"
 
-    assert apply_move([(49, 42)], state, game_type="checkers")[1] == -1
-    assert apply_move([(62, 44)], winning_b_example, game_type="checkers")[1] == 1
-    assert apply_move([(62, 44)], winning_w_example, game_type="checkers")[1] == 2
+    assert apply_move([49, 42], state, game_type="checkers")[1] == -1
+    assert apply_move([62, 44], winning_b_example, game_type="checkers")[1] == 1
+    assert apply_move([62, 44], winning_w_example, game_type="checkers")[1] == 2
